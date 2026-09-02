@@ -1,0 +1,249 @@
+// ==============================================================================
+// PROJECT SETU - Prisma Schema (MySQL Engine)
+// Smart India Hackathon 2026
+// ==============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------------------------------
+
+enum Role {
+  CITIZEN
+  OFFICER
+  SENIOR_OFFICER
+  ADMIN
+}
+
+enum GrievanceStatus {
+  SUBMITTED
+  AI_TRIAGED
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
+  ESCALATED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+// ------------------------------------------------------------------------------
+// MODELS
+// ------------------------------------------------------------------------------
+
+model User {
+  id              String             @id @default(uuid())
+  email           String             @unique
+  phone           String?            @unique
+  password        String
+  fullName        String
+  role            Role               @default(CITIZEN)
+  aadhaarHash     String?
+  departmentId    String?
+  department      Department?        @relation("DepartmentMembers", fields: [departmentId], references: [id])
+  isActive        Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  // Relationships
+  grievancesSubmitted  Grievance[]   @relation("CitizenGrievances")
+  grievancesAssigned   Grievance[]   @relation("OfficerGrievances")
+  timelinesCreated     GrievanceTimeline[] @relation("TimelineActor")
+  feedbacksGiven       CitizenFeedback[]
+  auditLogs            AuditLog[]
+  notifications        Notification[]
+  serviceApplications  ServiceApplication[]
+
+  @@map("users")
+}
+
+model Department {
+  id              String             @id @default(uuid())
+  code            String             @unique
+  name            String
+  description     String?            @db.Text
+  slaHoursDefault Int                @default(48)
+  contactEmail    String?
+  isActive        Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  // Relationships
+  members         User[]             @relation("DepartmentMembers")
+  categories      GrievanceCategory[]
+  grievances      Grievance[]
+  services        ServiceApplication[]
+
+  @@map("departments")
+}
+
+model GrievanceCategory {
+  id              String             @id @default(uuid())
+  name            String
+  departmentId    String
+  department      Department         @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  defaultPriority Priority           @default(MEDIUM)
+  slaHours        Int                @default(48)
+  createdAt       DateTime           @default(now())
+
+  // Relationships
+  grievances      Grievance[]
+
+  @@map("grievance_categories")
+}
+
+model Grievance {
+  id                      String             @id @default(uuid())
+  trackingNumber          String             @unique
+  citizenId               String
+  citizen                 User               @relation("CitizenGrievances", fields: [citizenId], references: [id], onDelete: Restrict)
+  departmentId            String?
+  department              Department?        @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  categoryId              String?
+  category                GrievanceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  title                   String
+  description             String             @db.Text
+  location                String?
+  pincode                 String?
+  status                  GrievanceStatus    @default(SUBMITTED)
+  priority                Priority           @default(MEDIUM)
+  aiConfidenceScore       Float?
+  aiSuggestedDepartmentId String?
+  aiKeywords              Json?
+  assignedOfficerId       String?
+  assignedOfficer         User?              @relation("OfficerGrievances", fields: [assignedOfficerId], references: [id], onDelete: SetNull)
+  slaDeadline             DateTime?
+  isEscalated             Boolean            @default(false)
+  resolutionNote          String?            @db.Text
+  resolvedAt              DateTime?
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+
+  // Relationships
+  timelines               GrievanceTimeline[]
+  documents               Document[]
+  feedback                CitizenFeedback?
+
+  @@index([status])
+  @@index([priority])
+  @@index([citizenId])
+  @@index([departmentId])
+  @@index([assignedOfficerId])
+  @@map("grievances")
+}
+
+model GrievanceTimeline {
+  id             String          @id @default(uuid())
+  grievanceId    String
+  grievance      Grievance       @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+  actorId        String?
+  actor          User?           @relation("TimelineActor", fields: [actorId], references: [id], onDelete: SetNull)
+  action         String
+  previousStatus String?
+  newStatus      String
+  remarks        String?         @db.Text
+  createdAt      DateTime        @default(now())
+
+  @@map("grievance_timelines")
+}
+
+model Document {
+  id             String          @id @default(uuid())
+  grievanceId    String?
+  grievance      Grievance?      @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+  serviceAppId   String?
+  serviceApp     ServiceApplication? @relation(fields: [serviceAppId], references: [id], onDelete: Cascade)
+  fileName       String
+  fileUrl        String          @db.VarChar(500)
+  fileType       String
+  fileSizeBytes  Int
+  uploadedAt     DateTime        @default(now())
+
+  @@map("documents")
+}
+
+model CitizenFeedback {
+  id             String          @id @default(uuid())
+  grievanceId    String          @unique
+  grievance      Grievance       @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+  citizenId      String
+  citizen        User            @relation(fields: [citizenId], references: [id], onDelete: Cascade)
+  rating         Int
+  feedbackText   String?         @db.Text
+  isSatisfied    Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+
+  @@map("citizen_feedbacks")
+}
+
+model ServiceApplication {
+  id             String            @id @default(uuid())
+  applicationNo  String            @unique
+  citizenId      String
+  citizen        User              @relation(fields: [citizenId], references: [id], onDelete: Restrict)
+  departmentId   String
+  department     Department        @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  serviceType    String
+  formData       Json
+  status         ApplicationStatus @default(SUBMITTED)
+  reviewedBy     String?
+  remarks        String?           @db.Text
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  // Relationships
+  documents      Document[]
+
+  @@map("service_applications")
+}
+
+model Notification {
+  id             String          @id @default(uuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String
+  message        String          @db.Text
+  isRead         Boolean         @default(false)
+  linkUrl        String?
+  createdAt      DateTime        @default(now())
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id             String          @id @default(uuid())
+  userId         String?
+  user           User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action         String
+  resourceType   String
+  resourceId     String?
+  ipAddress      String?
+  userAgent      String?
+  metadata       Json?
+  createdAt      DateTime        @default(now())
+
+  @@index([userId])
+  @@index([resourceType, resourceId])
+  @@map("audit_logs")
+}

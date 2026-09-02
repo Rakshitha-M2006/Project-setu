@@ -1,0 +1,30 @@
+export const USER_ROLES = {
+  CITIZEN: "CITIZEN",
+  OFFICER: "OFFICER",
+  SENIOR_OFFICER: "SENIOR_OFFICER",
+  ADMIN: "ADMIN",
+} as const;
+
+export const GRIEVANCE_STATUS = {
+  SUBMITTED: "SUBMITTED",
+  AI_TRIAGED: "AI_TRIAGED",
+  ASSIGNED: "ASSIGNED",
+  IN_PROGRESS: "IN_PROGRESS",
+  RESOLVED: "RESOLVED",
+  REJECTED: "REJECTED",
+  ESCALATED: "ESCALATED",
+} as const;
+
+export const PRIORITY_LEVELS = {
+  LOW: "LOW",
+  MEDIUM: "MEDIUM",
+  HIGH: "HIGH",
+  CRITICAL: "CRITICAL",
+} as const;
+
+export const SLA_HOURS = {
+  CRITICAL: 6,
+  HIGH: 24,
+  MEDIUM: 48,
+  LOW: 72,
+} as const;
