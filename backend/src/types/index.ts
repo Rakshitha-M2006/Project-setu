@@ -1,3 +1,4 @@
+import { Request } from "express";
 import { Role, Priority, GrievanceStatus, ApplicationStatus } from "@prisma/client";
 
 export type UserRole = Role;
@@ -8,6 +9,10 @@ export interface JwtUserPayload {
   role: Role;
   fullName: string;
   departmentId?: string | null;
+}
+
+export interface AuthenticatedRequest extends Request {
+  user?: JwtUserPayload;
 }
 
 export interface GrievanceAIAnalysisResult {
