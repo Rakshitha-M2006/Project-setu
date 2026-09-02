@@ -21,7 +21,7 @@ export const getDepartments = async (req: Request, res: Response, next: NextFunc
       include: {
         categories: true,
         _count: {
-          select: { grievances: true, members: true },
+          select: { grievances: true, officers: true },
         },
       },
       orderBy: { name: "asc" },
@@ -35,7 +35,7 @@ export const getDepartments = async (req: Request, res: Response, next: NextFunc
 
 export const createDepartment = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { code, name, description, slaHoursDefault, contactEmail } = req.body;
+    const { code, name, description, defaultSlaHours, nodalOfficerEmail } = req.body;
 
     const existing = await prisma.department.findUnique({
       where: { code },
@@ -50,8 +50,8 @@ export const createDepartment = async (req: Request, res: Response, next: NextFu
         code,
         name,
         description,
-        slaHoursDefault: slaHoursDefault || 48,
-        contactEmail,
+        defaultSlaHours: defaultSlaHours || 48,
+        nodalOfficerEmail,
       },
     });
 

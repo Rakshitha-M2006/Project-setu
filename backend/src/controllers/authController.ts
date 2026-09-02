@@ -7,6 +7,7 @@ import { env } from "../config/env";
 import { ApiResponse } from "../utils/apiResponse";
 import { ApiError } from "../utils/apiError";
 import { JwtUserPayload } from "../types";
+import { Role } from "@prisma/client";
 
 export const registerSchema = z.object({
   body: z.object({
@@ -16,6 +17,7 @@ export const registerSchema = z.object({
     phone: z.string().optional(),
     role: z.enum(["CITIZEN", "OFFICER", "SENIOR_OFFICER", "ADMIN"]).optional(),
     departmentId: z.string().optional(),
+    designation: z.string().optional(),
   }),
 });
 
@@ -28,7 +30,8 @@ export const loginSchema = z.object({
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email, password, fullName, phone, role, departmentId } = req.body;
+    const { email, password, fullName, phone, role, departmentId, designation } = req.body;
+    const userRole = (role as Role) || Role.CITIZEN;
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -43,11 +46,25 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const newUser = await prisma.user.create({
       data: {
         email,
-        password: hashedPassword,
+        passwordHash: hashedPassword,
         fullName,
         phone,
-        role: role || "CITIZEN",
-        departmentId: role === "OFFICER" || role === "SENIOR_OFFICER" ? departmentId : undefined,
+        role: userRole,
+        citizenProfile:
+          userRole === Role.CITIZEN
+            ? {
+                create: {},
+              }
+            : undefined,
+        officerProfile:
+          userRole === Role.OFFICER || userRole === Role.SENIOR_OFFICER
+            ? {
+                create: {
+                  departmentId: departmentId || "dept-water-supply",
+                  designation: designation || "Assigned Officer",
+                },
+              }
+            : undefined,
       },
       select: {
         id: true,
@@ -55,8 +72,13 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         fullName: true,
         phone: true,
         role: true,
-        departmentId: true,
         createdAt: true,
+        officerProfile: {
+          select: {
+            departmentId: true,
+            designation: true,
+          },
+        },
       },
     });
 
@@ -65,7 +87,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       email: newUser.email,
       fullName: newUser.fullName,
       role: newUser.role,
-      departmentId: newUser.departmentId,
+      departmentId: newUser.officerProfile?.departmentId,
     };
 
     const token = jwt.sign(tokenPayload, env.JWT_SECRET, {
@@ -75,7 +97,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     return ApiResponse.created(
       res,
       { user: newUser, token },
-      "Citizen registered successfully"
+      "User registered successfully"
     );
   } catch (error) {
     next(error);
@@ -89,8 +111,12 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
-        department: {
-          select: { id: true, code: true, name: true },
+        officerProfile: {
+          include: {
+            department: {
+              select: { id: true, code: true, name: true },
+            },
+          },
         },
       },
     });
@@ -99,7 +125,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       throw ApiError.unauthorized("Invalid email or password");
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
       throw ApiError.unauthorized("Invalid email or password");
     }
@@ -109,14 +135,14 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       email: user.email,
       fullName: user.fullName,
       role: user.role,
-      departmentId: user.departmentId,
+      departmentId: user.officerProfile?.departmentId,
     };
 
     const token = jwt.sign(tokenPayload, env.JWT_SECRET, {
       expiresIn: env.JWT_EXPIRES_IN as any,
     });
 
-    const { password: _, ...userWithoutPassword } = user;
+    const { passwordHash: _, ...userWithoutPassword } = user;
 
     return ApiResponse.success(
       res,
@@ -142,8 +168,12 @@ export const getCurrentUser = async (req: Request, res: Response, next: NextFunc
         fullName: true,
         phone: true,
         role: true,
-        departmentId: true,
-        department: true,
+        citizenProfile: true,
+        officerProfile: {
+          include: {
+            department: true,
+          },
+        },
         createdAt: true,
       },
     });

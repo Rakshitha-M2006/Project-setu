@@ -1,6 +1,7 @@
 // ==============================================================================
-// PROJECT SETU - Prisma Schema (MySQL Engine)
+// PROJECT SETU - Enterprise Relational Database Schema (MySQL 8.0+)
 // Smart India Hackathon 2026
+// Engine: InnoDB | Charset: utf8mb4 | Collation: utf8mb4_unicode_ci
 // ==============================================================================
 
 generator client {
@@ -23,14 +24,23 @@ enum Role {
   ADMIN
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
 enum GrievanceStatus {
   SUBMITTED
   AI_TRIAGED
   ASSIGNED
   IN_PROGRESS
+  UNDER_INSPECTION
   RESOLVED
   REJECTED
   ESCALATED
+  REOPENED
 }
 
 enum Priority {
@@ -44,206 +54,516 @@ enum ApplicationStatus {
   DRAFT
   SUBMITTED
   UNDER_REVIEW
+  DOCUMENT_VERIFICATION
   APPROVED
   REJECTED
+  COMPLETED
+}
+
+enum EscalationLevel {
+  LEVEL_1_SUPERVISOR
+  LEVEL_2_HOD
+  LEVEL_3_DISTRICT_MAGISTRATE
+}
+
+enum EscalationStatus {
+  TRIGGERED
+  ACKNOWLEDGED
+  INVESTIGATING
+  RESOLVED
+  OVERRIDDEN
+}
+
+enum NotificationType {
+  GRIEVANCE_STATUS_UPDATE
+  OFFICER_ASSIGNED
+  SLA_BREACH_WARNING
+  ESCALATION_TRIGGERED
+  SERVICE_APPLICATION_UPDATE
+  FEEDBACK_REQUEST
+  SYSTEM_ANNOUNCEMENT
+}
+
+enum StorageProvider {
+  LOCAL
+  S3_COMPATIBLE
+  AZURE_BLOB
+  GCS
 }
 
 // ------------------------------------------------------------------------------
-// MODELS
+// 1. IDENTITY & ACCESS MANAGEMENT
 // ------------------------------------------------------------------------------
 
 model User {
-  id              String             @id @default(uuid())
-  email           String             @unique
-  phone           String?            @unique
-  password        String
-  fullName        String
-  role            Role               @default(CITIZEN)
-  aadhaarHash     String?
-  departmentId    String?
-  department      Department?        @relation("DepartmentMembers", fields: [departmentId], references: [id])
-  isActive        Boolean            @default(true)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  id               String            @id @default(uuid())
+  email            String            @unique
+  phone            String?           @unique
+  passwordHash     String
+  fullName         String
+  role             Role              @default(CITIZEN)
+  isActive         Boolean           @default(true)
+  isEmailVerified  Boolean           @default(false)
+  isPhoneVerified  Boolean           @default(false)
+  lastLoginAt      DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
-  // Relationships
-  grievancesSubmitted  Grievance[]   @relation("CitizenGrievances")
-  grievancesAssigned   Grievance[]   @relation("OfficerGrievances")
-  timelinesCreated     GrievanceTimeline[] @relation("TimelineActor")
-  feedbacksGiven       CitizenFeedback[]
-  auditLogs            AuditLog[]
-  notifications        Notification[]
-  serviceApplications  ServiceApplication[]
+  // 1-to-1 Profile Extensions
+  citizenProfile   CitizenProfile?
+  officerProfile   OfficerProfile?
 
+  // Operational Relationships
+  grievancesSubmitted       Grievance[]              @relation("CitizenGrievances")
+  assignedByMe              GrievanceAssignment[]    @relation("AssignedByActor")
+  statusHistories           GrievanceStatusHistory[] @relation("StatusChangeActor")
+  attachmentsUploaded       GrievanceAttachment[]    @relation("AttachmentUploader")
+  serviceApplications       ServiceApplication[]     @relation("CitizenServiceApplications")
+  reviewedApplications      ServiceApplication[]     @relation("ReviewingOfficerApplications")
+  serviceDocsUploaded       ServiceDocument[]        @relation("ServiceDocUploader")
+  feedbacksGiven            Feedback[]               @relation("CitizenFeedbacks")
+  notificationsReceived     Notification[]           @relation("NotificationRecipient")
+  auditLogs                 AuditLog[]               @relation("AuditActor")
+  escalationsTriggered      Escalation[]             @relation("EscalationTriggeredBy")
+  escalationsAssigned       Escalation[]             @relation("EscalationAssignedTo")
+
+  @@index([role])
+  @@index([isActive])
   @@map("users")
 }
 
-model Department {
-  id              String             @id @default(uuid())
-  code            String             @unique
-  name            String
-  description     String?            @db.Text
-  slaHoursDefault Int                @default(48)
-  contactEmail    String?
-  isActive        Boolean            @default(true)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+model CitizenProfile {
+  id               String            @id @default(uuid())
+  userId           String            @unique
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aadhaarHash      String?           @unique
+  gender           Gender?
+  dateOfBirth      DateTime?
+  addressLine1     String?
+  addressLine2     String?
+  pincode          String?
+  locationId       String?
+  location         Location?         @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  emergencyContact String?
+  occupation       String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([pincode])
+  @@index([locationId])
+  @@map("citizen_profiles")
+}
+
+model OfficerProfile {
+  id                     String                @id @default(uuid())
+  userId                 String                @unique
+  user                   User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  departmentId           String
+  department             Department            @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  badgeNumber            String?               @unique
+  designation            String
+  jurisdictionWard       String?
+  locationId             String?
+  location               Location?             @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  isAvailable            Boolean               @default(true)
+  activeGrievanceCount   Int                   @default(0)
+  resolvedGrievanceCount Int                   @default(0)
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
 
   // Relationships
-  members         User[]             @relation("DepartmentMembers")
-  categories      GrievanceCategory[]
-  grievances      Grievance[]
-  services        ServiceApplication[]
+  assignments            GrievanceAssignment[]
 
+  @@index([userId])
+  @@index([departmentId])
+  @@index([isAvailable])
+  @@index([locationId])
+  @@map("officer_profiles")
+}
+
+// ------------------------------------------------------------------------------
+// 2. ADMINISTRATIVE GEOGRAPHY & MASTER DATA
+// ------------------------------------------------------------------------------
+
+model Location {
+  id               String            @id @default(uuid())
+  state            String
+  district         String
+  subDistrict      String?           // Tehsil / Taluka
+  blockOrWard      String?
+  locality         String?           // Village / Colony / Sector
+  pincode          String
+  latitude         Float?
+  longitude        Float?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  // Relationships
+  citizens         CitizenProfile[]
+  officers         OfficerProfile[]
+  grievances       Grievance[]
+
+  @@index([pincode])
+  @@index([district])
+  @@index([state])
+  @@index([blockOrWard])
+  @@map("locations")
+}
+
+model Department {
+  id                  String                @id @default(uuid())
+  code                String                @unique
+  name                String
+  description         String?               @db.Text
+  nodalOfficerName    String?
+  nodalOfficerEmail   String?
+  nodalOfficerPhone   String?
+  defaultSlaHours     Int                   @default(48)
+  escalationSlaHours  Int                   @default(24)
+  isActive            Boolean               @default(true)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  // Relationships
+  officers            OfficerProfile[]
+  categories          GrievanceCategory[]
+  grievances          Grievance[]
+  services            GovernmentService[]
+  serviceApplications ServiceApplication[]
+  aiClassifications   AIClassification[]
+
+  @@index([code])
+  @@index([isActive])
   @@map("departments")
 }
 
 model GrievanceCategory {
-  id              String             @id @default(uuid())
-  name            String
-  departmentId    String
-  department      Department         @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  defaultPriority Priority           @default(MEDIUM)
-  slaHours        Int                @default(48)
-  createdAt       DateTime           @default(now())
+  id                  String                @id @default(uuid())
+  departmentId        String
+  department          Department            @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  name                String
+  code                String?
+  description         String?               @db.Text
+  defaultPriority     Priority              @default(MEDIUM)
+  defaultSlaHours     Int                   @default(48)
+  isActive            Boolean               @default(true)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
 
   // Relationships
-  grievances      Grievance[]
+  grievances          Grievance[]
+  aiClassifications   AIClassification[]
 
+  @@index([departmentId])
+  @@index([isActive])
   @@map("grievance_categories")
 }
 
+// ------------------------------------------------------------------------------
+// 3. CORE GRIEVANCE ENGINE & AI INTEGRATION
+// ------------------------------------------------------------------------------
+
 model Grievance {
-  id                      String             @id @default(uuid())
-  trackingNumber          String             @unique
-  citizenId               String
-  citizen                 User               @relation("CitizenGrievances", fields: [citizenId], references: [id], onDelete: Restrict)
-  departmentId            String?
-  department              Department?        @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  categoryId              String?
-  category                GrievanceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  title                   String
-  description             String             @db.Text
-  location                String?
-  pincode                 String?
-  status                  GrievanceStatus    @default(SUBMITTED)
-  priority                Priority           @default(MEDIUM)
-  aiConfidenceScore       Float?
-  aiSuggestedDepartmentId String?
-  aiKeywords              Json?
-  assignedOfficerId       String?
-  assignedOfficer         User?              @relation("OfficerGrievances", fields: [assignedOfficerId], references: [id], onDelete: SetNull)
-  slaDeadline             DateTime?
-  isEscalated             Boolean            @default(false)
-  resolutionNote          String?            @db.Text
-  resolvedAt              DateTime?
-  createdAt               DateTime           @default(now())
-  updatedAt               DateTime           @updatedAt
+  id                  String                   @id @default(uuid())
+  trackingNumber      String                   @unique
+  citizenId           String
+  citizen             User                     @relation("CitizenGrievances", fields: [citizenId], references: [id], onDelete: Restrict)
+  departmentId        String?
+  department          Department?              @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  categoryId          String?
+  category            GrievanceCategory?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  locationId          String?
+  location            Location?                @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  title               String
+  description         String                   @db.Text
+  addressText         String?
+  pincode             String?
+  status              GrievanceStatus          @default(SUBMITTED)
+  priority            Priority                 @default(MEDIUM)
+  isUrgent            Boolean                  @default(false)
+  slaDeadline         DateTime?
+  slaBreached         Boolean                  @default(false)
+  isEscalated         Boolean                  @default(false)
+  resolutionSummary   String?                  @db.Text
+  resolvedAt          DateTime?
+  closedAt            DateTime?
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
 
   // Relationships
-  timelines               GrievanceTimeline[]
-  documents               Document[]
-  feedback                CitizenFeedback?
+  aiClassification    AIClassification?
+  statusHistories     GrievanceStatusHistory[]
+  assignments         GrievanceAssignment[]
+  attachments         GrievanceAttachment[]
+  escalations         Escalation[]
+  feedback            Feedback?
 
+  @@index([trackingNumber])
   @@index([status])
   @@index([priority])
   @@index([citizenId])
   @@index([departmentId])
-  @@index([assignedOfficerId])
+  @@index([categoryId])
+  @@index([locationId])
+  @@index([pincode])
+  @@index([slaDeadline])
+  @@index([isEscalated])
+  @@index([createdAt])
   @@map("grievances")
 }
 
-model GrievanceTimeline {
-  id             String          @id @default(uuid())
-  grievanceId    String
-  grievance      Grievance       @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
-  actorId        String?
-  actor          User?           @relation("TimelineActor", fields: [actorId], references: [id], onDelete: SetNull)
-  action         String
-  previousStatus String?
-  newStatus      String
-  remarks        String?         @db.Text
-  createdAt      DateTime        @default(now())
+model AIClassification {
+  id                     String             @id @default(uuid())
+  grievanceId            String             @unique
+  grievance              Grievance          @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+  predictedDepartmentId  String?
+  predictedDepartment    Department?        @relation(fields: [predictedDepartmentId], references: [id], onDelete: SetNull)
+  predictedCategoryId    String?
+  predictedCategory      GrievanceCategory? @relation(fields: [predictedCategoryId], references: [id], onDelete: SetNull)
+  predictedDepartmentCode String?
+  confidenceScore        Float
+  priorityScore          Priority
+  detectedSentiment      String
+  extractedKeywords      Json?
+  suggestedSlaHours      Int
+  isSpamOrGibberish      Boolean            @default(false)
+  isDuplicate            Boolean            @default(false)
+  modelVersion           String             @default("1.0.0-sih")
+  rawInference           Json?
+  createdAt              DateTime           @default(now())
 
-  @@map("grievance_timelines")
+  @@index([grievanceId])
+  @@index([confidenceScore])
+  @@index([predictedDepartmentId])
+  @@map("ai_classifications")
 }
 
-model Document {
-  id             String          @id @default(uuid())
-  grievanceId    String?
-  grievance      Grievance?      @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
-  serviceAppId   String?
-  serviceApp     ServiceApplication? @relation(fields: [serviceAppId], references: [id], onDelete: Cascade)
-  fileName       String
-  fileUrl        String          @db.VarChar(500)
-  fileType       String
-  fileSizeBytes  Int
-  uploadedAt     DateTime        @default(now())
+model GrievanceStatusHistory {
+  id               String            @id @default(uuid())
+  grievanceId      String
+  grievance        Grievance         @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+  actorId          String?
+  actor            User?             @relation("StatusChangeActor", fields: [actorId], references: [id], onDelete: SetNull)
+  previousStatus   GrievanceStatus?
+  newStatus        GrievanceStatus
+  actionTaken      String
+  remarks          String?           @db.Text
+  createdAt        DateTime          @default(now())
 
-  @@map("documents")
+  @@index([grievanceId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("grievance_status_histories")
 }
 
-model CitizenFeedback {
-  id             String          @id @default(uuid())
-  grievanceId    String          @unique
-  grievance      Grievance       @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
-  citizenId      String
-  citizen        User            @relation(fields: [citizenId], references: [id], onDelete: Cascade)
-  rating         Int
-  feedbackText   String?         @db.Text
-  isSatisfied    Boolean         @default(true)
-  createdAt      DateTime        @default(now())
+model GrievanceAssignment {
+  id                 String          @id @default(uuid())
+  grievanceId        String
+  grievance          Grievance       @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+  officerProfileId   String
+  officerProfile     OfficerProfile  @relation(fields: [officerProfileId], references: [id], onDelete: Restrict)
+  assignedById       String?
+  assignedBy         User?           @relation("AssignedByActor", fields: [assignedById], references: [id], onDelete: SetNull)
+  assignmentNotes    String?         @db.Text
+  isActive           Boolean         @default(true)
+  assignedAt         DateTime        @default(now())
+  unassignedAt       DateTime?
 
-  @@map("citizen_feedbacks")
+  @@index([grievanceId])
+  @@index([officerProfileId])
+  @@index([isActive])
+  @@map("grievance_assignments")
+}
+
+model GrievanceAttachment {
+  id                   String          @id @default(uuid())
+  grievanceId          String
+  grievance            Grievance       @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+  uploadedById         String
+  uploadedBy           User            @relation("AttachmentUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+  fileName             String
+  originalName         String
+  fileUrl              String          @db.VarChar(500)
+  mimeType             String
+  fileSizeBytes        Int
+  storageProvider      StorageProvider @default(LOCAL)
+  isResolutionEvidence Boolean         @default(false)
+  uploadedAt           DateTime        @default(now())
+
+  @@index([grievanceId])
+  @@index([uploadedById])
+  @@map("grievance_attachments")
+}
+
+model Escalation {
+  id                 String           @id @default(uuid())
+  grievanceId        String
+  grievance          Grievance        @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+  escalationLevel    EscalationLevel  @default(LEVEL_1_SUPERVISOR)
+  status             EscalationStatus @default(TRIGGERED)
+  reason             String           @db.Text
+  triggeredById      String?
+  triggeredBy        User?            @relation("EscalationTriggeredBy", fields: [triggeredById], references: [id], onDelete: SetNull)
+  escalatedToUserId  String?
+  escalatedToUser    User?            @relation("EscalationAssignedTo", fields: [escalatedToUserId], references: [id], onDelete: SetNull)
+  actionNotes        String?          @db.Text
+  triggeredAt        DateTime         @default(now())
+  acknowledgedAt     DateTime?
+  resolvedAt         DateTime?
+
+  @@index([grievanceId])
+  @@index([escalationLevel])
+  @@index([status])
+  @@index([escalatedToUserId])
+  @@map("escalations")
+}
+
+// ------------------------------------------------------------------------------
+// 4. GOVERNMENT SERVICES & CITIZEN APPLICATIONS
+// ------------------------------------------------------------------------------
+
+model GovernmentService {
+  id                      String                @id @default(uuid())
+  code                    String                @unique
+  name                    String
+  departmentId            String
+  department              Department            @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  description             String?               @db.Text
+  eligibilityCriteria     String?               @db.Text
+  requiredDocuments       Json?                 // Array of required doc descriptions
+  feeAmount               Decimal               @default(0.00) @db.Decimal(10, 2)
+  estimatedProcessingDays Int                   @default(7)
+  isActive                Boolean               @default(true)
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+
+  // Relationships
+  applications            ServiceApplication[]
+
+  @@index([code])
+  @@index([departmentId])
+  @@index([isActive])
+  @@map("government_services")
 }
 
 model ServiceApplication {
-  id             String            @id @default(uuid())
-  applicationNo  String            @unique
-  citizenId      String
-  citizen        User              @relation(fields: [citizenId], references: [id], onDelete: Restrict)
-  departmentId   String
-  department     Department        @relation(fields: [departmentId], references: [id], onDelete: Restrict)
-  serviceType    String
-  formData       Json
-  status         ApplicationStatus @default(SUBMITTED)
-  reviewedBy     String?
-  remarks        String?           @db.Text
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  id                 String             @id @default(uuid())
+  applicationNumber  String             @unique
+  citizenId          String
+  citizen            User               @relation("CitizenServiceApplications", fields: [citizenId], references: [id], onDelete: Restrict)
+  serviceId          String
+  service            GovernmentService  @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  departmentId       String
+  department         Department         @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  status             ApplicationStatus  @default(SUBMITTED)
+  formData           Json
+  reviewingOfficerId String?
+  reviewingOfficer   User?              @relation("ReviewingOfficerApplications", fields: [reviewingOfficerId], references: [id], onDelete: SetNull)
+  officerRemarks     String?            @db.Text
+  submittedAt        DateTime           @default(now())
+  reviewedAt         DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
   // Relationships
-  documents      Document[]
+  documents          ServiceDocument[]
+  feedbacks          Feedback[]
 
+  @@index([applicationNumber])
+  @@index([citizenId])
+  @@index([serviceId])
+  @@index([departmentId])
+  @@index([status])
+  @@index([createdAt])
   @@map("service_applications")
 }
 
-model Notification {
-  id             String          @id @default(uuid())
-  userId         String
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title          String
-  message        String          @db.Text
-  isRead         Boolean         @default(false)
-  linkUrl        String?
-  createdAt      DateTime        @default(now())
+model ServiceDocument {
+  id                   String              @id @default(uuid())
+  serviceApplicationId String
+  serviceApplication   ServiceApplication  @relation(fields: [serviceApplicationId], references: [id], onDelete: Cascade)
+  uploadedById         String
+  uploadedBy           User                @relation("ServiceDocUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+  documentType         String
+  fileName             String
+  originalName         String
+  fileUrl              String              @db.VarChar(500)
+  mimeType             String
+  fileSizeBytes        Int
+  storageProvider      StorageProvider     @default(LOCAL)
+  isVerified           Boolean             @default(false)
+  verifiedAt           DateTime?
+  verificationRemarks  String?
+  uploadedAt           DateTime            @default(now())
 
+  @@index([serviceApplicationId])
+  @@index([uploadedById])
+  @@index([documentType])
+  @@map("service_documents")
+}
+
+// ------------------------------------------------------------------------------
+// 5. CITIZEN FEEDBACK & AUDIT LOGGING
+// ------------------------------------------------------------------------------
+
+model Feedback {
+  id                     String              @id @default(uuid())
+  citizenId              String
+  citizen                User                @relation("CitizenFeedbacks", fields: [citizenId], references: [id], onDelete: Cascade)
+  grievanceId            String?             @unique
+  grievance              Grievance?          @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+  serviceApplicationId   String?
+  serviceApplication     ServiceApplication? @relation(fields: [serviceApplicationId], references: [id], onDelete: Cascade)
+  rating                 Int                 // 1 to 5 scale
+  timelinessRating       Int?                // 1 to 5
+  officerBehaviorRating  Int?                // 1 to 5
+  feedbackComments       String?             @db.Text
+  isSatisfied            Boolean             @default(true)
+  createdAt              DateTime            @default(now())
+
+  @@index([citizenId])
+  @@index([rating])
+  @@index([createdAt])
+  @@map("feedbacks")
+}
+
+model Notification {
+  id               String            @id @default(uuid())
+  recipientId      String
+  recipient        User              @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  type             NotificationType  @default(GRIEVANCE_STATUS_UPDATE)
+  title            String
+  message          String            @db.Text
+  linkUrl          String?
+  isRead           Boolean           @default(false)
+  readAt           DateTime?
+  createdAt        DateTime          @default(now())
+
+  @@index([recipientId])
+  @@index([isRead])
+  @@index([type])
+  @@index([createdAt])
   @@map("notifications")
 }
 
 model AuditLog {
-  id             String          @id @default(uuid())
-  userId         String?
-  user           User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
-  action         String
-  resourceType   String
-  resourceId     String?
-  ipAddress      String?
-  userAgent      String?
-  metadata       Json?
-  createdAt      DateTime        @default(now())
+  id               String            @id @default(uuid())
+  actorId          String?
+  actor            User?             @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  action           String
+  entityType       String
+  entityId         String?
+  ipAddress        String?
+  userAgent        String?
+  changes          Json?
+  metadata         Json?
+  createdAt        DateTime          @default(now())
 
-  @@index([userId])
-  @@index([resourceType, resourceId])
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
   @@map("audit_logs")
 }

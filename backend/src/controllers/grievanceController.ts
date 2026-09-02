@@ -10,9 +10,10 @@ export const createGrievanceSchema = z.object({
   body: z.object({
     title: z.string().min(3, "Title must be at least 3 characters"),
     description: z.string().min(5, "Description must be at least 5 characters"),
-    location: z.string().optional(),
+    addressText: z.string().optional(),
     pincode: z.string().optional(),
     departmentId: z.string().optional(),
+    locationId: z.string().optional(),
   }),
 });
 
@@ -23,12 +24,14 @@ export const updateStatusSchema = z.object({
       "AI_TRIAGED",
       "ASSIGNED",
       "IN_PROGRESS",
+      "UNDER_INSPECTION",
       "RESOLVED",
       "REJECTED",
       "ESCALATED",
+      "REOPENED",
     ]),
     remarks: z.string().optional(),
-    resolutionNote: z.string().optional(),
+    resolutionSummary: z.string().optional(),
   }),
   params: z.object({
     id: z.string(),
@@ -38,10 +41,10 @@ export const updateStatusSchema = z.object({
 export const submitGrievance = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const citizenId = req.user!.id;
-    const { title, description, location, pincode, departmentId } = req.body;
+    const { title, description, addressText, pincode, departmentId, locationId } = req.body;
 
     // 1. Call AI Microservice for NLP triage & SLA estimate
-    const aiAnalysis = await AiServiceClient.analyzeGrievance(title, description, location, pincode);
+    const aiAnalysis = await AiServiceClient.analyzeGrievance(title, description, addressText, pincode);
 
     // 2. Resolve department from AI recommendation if not explicitly passed
     let targetDepartmentId = departmentId;
@@ -60,37 +63,48 @@ export const submitGrievance = async (req: Request, res: Response, next: NextFun
 
     // 4. Generate unique tracking number (e.g. SETU-2026-XXXXX)
     const trackingNumber = `SETU-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
-
     const priorityValue = (aiAnalysis?.priority as Priority) || Priority.MEDIUM;
 
-    // 5. Persist to MySQL Database with initial timeline
+    // 5. Persist to MySQL Database with AI classification record & initial status history
     const grievance = await prisma.grievance.create({
       data: {
         trackingNumber,
         citizenId,
         departmentId: targetDepartmentId,
+        locationId: locationId || undefined,
         title,
         description,
-        location,
+        addressText,
         pincode,
         status: GrievanceStatus.AI_TRIAGED,
         priority: priorityValue,
-        aiConfidenceScore: aiAnalysis?.confidence_score,
-        aiKeywords: aiAnalysis?.extracted_keywords || [],
+        isUrgent: aiAnalysis?.is_urgent || false,
         slaDeadline,
-        timelines: {
+        aiClassification: {
+          create: {
+            predictedDepartmentId: targetDepartmentId,
+            predictedDepartmentCode: aiAnalysis?.suggested_department || "GENERAL_ADMINISTRATION",
+            confidenceScore: aiAnalysis?.confidence_score || 0.5,
+            priorityScore: priorityValue,
+            detectedSentiment: aiAnalysis?.sentiment || "NEUTRAL",
+            extractedKeywords: aiAnalysis?.extracted_keywords || [],
+            suggestedSlaHours: slaHours,
+          },
+        },
+        statusHistories: {
           create: {
             actorId: citizenId,
-            action: "GRIEVANCE_SUBMITTED",
+            actionTaken: "GRIEVANCE_SUBMITTED",
             previousStatus: null,
             newStatus: GrievanceStatus.SUBMITTED,
-            remarks: "Grievance submitted by citizen and automatically triaged by AI engine.",
+            remarks: "Grievance submitted by citizen and processed through AI classification engine.",
           },
         },
       },
       include: {
         department: true,
-        timelines: true,
+        aiClassification: true,
+        statusHistories: true,
       },
     });
 
@@ -107,7 +121,7 @@ export const submitGrievance = async (req: Request, res: Response, next: NextFun
 export const getGrievances = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user!;
-    const { status, priority } = req.query;
+    const { status, priority, departmentId } = req.query;
 
     const whereClause: any = {};
 
@@ -117,14 +131,15 @@ export const getGrievances = async (req: Request, res: Response, next: NextFunct
     if (priority) {
       whereClause.priority = priority as Priority;
     }
+    if (departmentId) {
+      whereClause.departmentId = departmentId as string;
+    }
 
     // Role-based visibility
     if (user.role === "CITIZEN") {
       whereClause.citizenId = user.id;
-    } else if (user.role === "OFFICER" || user.role === "SENIOR_OFFICER") {
-      if (user.departmentId) {
-        whereClause.departmentId = user.departmentId;
-      }
+    } else if ((user.role === "OFFICER" || user.role === "SENIOR_OFFICER") && user.departmentId) {
+      whereClause.departmentId = user.departmentId;
     }
 
     const grievances = await prisma.grievance.findMany({
@@ -132,7 +147,19 @@ export const getGrievances = async (req: Request, res: Response, next: NextFunct
       include: {
         department: { select: { id: true, name: true, code: true } },
         citizen: { select: { id: true, fullName: true, email: true, phone: true } },
-        assignedOfficer: { select: { id: true, fullName: true, email: true } },
+        assignments: {
+          where: { isActive: true },
+          include: {
+            officerProfile: {
+              include: {
+                user: { select: { id: true, fullName: true, email: true } },
+              },
+            },
+          },
+        },
+        aiClassification: {
+          select: { confidenceScore: true, detectedSentiment: true, priorityScore: true },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -153,15 +180,27 @@ export const getGrievanceById = async (req: Request, res: Response, next: NextFu
       include: {
         department: true,
         category: true,
+        location: true,
         citizen: { select: { id: true, fullName: true, email: true, phone: true } },
-        assignedOfficer: { select: { id: true, fullName: true, email: true } },
-        timelines: {
+        aiClassification: true,
+        assignments: {
+          include: {
+            officerProfile: {
+              include: {
+                user: { select: { id: true, fullName: true, email: true } },
+              },
+            },
+            assignedBy: { select: { id: true, fullName: true, role: true } },
+          },
+        },
+        statusHistories: {
           include: {
             actor: { select: { id: true, fullName: true, role: true } },
           },
           orderBy: { createdAt: "asc" },
         },
-        documents: true,
+        attachments: true,
+        escalations: true,
         feedback: true,
       },
     });
@@ -184,7 +223,7 @@ export const getGrievanceById = async (req: Request, res: Response, next: NextFu
 export const updateGrievanceStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { status, remarks, resolutionNote } = req.body;
+    const { status, remarks, resolutionSummary } = req.body;
     const actorId = req.user!.id;
 
     const existing = await prisma.grievance.findUnique({ where: { id } });
@@ -196,20 +235,20 @@ export const updateGrievanceStatus = async (req: Request, res: Response, next: N
       where: { id },
       data: {
         status: status as GrievanceStatus,
-        resolutionNote: resolutionNote || existing.resolutionNote,
+        resolutionSummary: resolutionSummary || existing.resolutionSummary,
         resolvedAt: status === "RESOLVED" ? new Date() : existing.resolvedAt,
-        timelines: {
+        statusHistories: {
           create: {
             actorId,
-            action: `STATUS_CHANGED_TO_${status}`,
+            actionTaken: `STATUS_CHANGED_TO_${status}`,
             previousStatus: existing.status,
-            newStatus: status,
+            newStatus: status as GrievanceStatus,
             remarks: remarks || `Status updated to ${status}`,
           },
         },
       },
       include: {
-        timelines: true,
+        statusHistories: true,
       },
     });
 
