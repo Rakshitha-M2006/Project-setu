@@ -1,18 +1,29 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import { healthService } from "../services/healthService";
 import { ApiResponse } from "../utils/apiResponse";
-import { AiServiceClient } from "../services/aiServiceClient";
+import { HttpStatus } from "../utils/httpStatusCodes";
 
-export const getHealth = async (req: Request, res: Response) => {
-  const aiServiceOnline = await AiServiceClient.checkHealth();
+export class HealthController {
+  /**
+   * GET /api/v1/health
+   * Performs real-time readiness and liveness inspection across all system subsystems.
+   */
+  async getHealth(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const healthData = await healthService.getHealthStatus();
+      const statusCode = healthData.status === "healthy" ? HttpStatus.OK : HttpStatus.OK; // Return 200 with degraded metadata so monitors can read JSON
 
-  return ApiResponse.success(res, {
-    status: "healthy",
-    service: "PROJECT SETU Backend REST API",
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
-    dependencies: {
-      database: "MySQL (Prisma)",
-      aiMicroservice: aiServiceOnline ? "online" : "unreachable",
-    },
-  });
-};
+      ApiResponse.success(
+        res,
+        healthData,
+        `Service is operating in ${healthData.status} mode`,
+        statusCode
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+}
+
+export const healthController = new HealthController();
+export default healthController;

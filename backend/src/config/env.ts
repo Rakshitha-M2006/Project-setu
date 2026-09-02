@@ -1,14 +1,40 @@
 import dotenv from "dotenv";
 import path from "path";
+import { z } from "zod";
 
+// Load environment variables from .env file
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
-export const env = {
-  NODE_ENV: process.env.NODE_ENV || "development",
-  PORT: parseInt(process.env.PORT || "5000", 10),
-  DATABASE_URL: process.env.DATABASE_URL || "mysql://root:password@localhost:3306/project_setu_db",
-  JWT_SECRET: process.env.JWT_SECRET || "setu_default_secret_key_change_me",
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
-  AI_SERVICE_URL: process.env.AI_SERVICE_URL || "http://localhost:8000",
-  CORS_ORIGIN: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : ["http://localhost:5173", "http://localhost:3000"],
+const envSchema = z.object({
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  PORT: z.coerce.number().default(5000),
+  HOST: z.string().default("0.0.0.0"),
+  API_PREFIX: z.string().default("/api/v1"),
+  DATABASE_URL: z.string().default("mysql://root:password@localhost:3306/project_setu_db"),
+  JWT_SECRET: z.string().default("setu_jwt_super_secret_development_key_change_in_production"),
+  JWT_EXPIRES_IN: z.string().default("7d"),
+  AI_SERVICE_URL: z.string().default("http://localhost:8000"),
+  CORS_ORIGIN: z.string().default("http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173"),
+  LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),
+});
+
+const parseEnv = () => {
+  const result = envSchema.safeParse(process.env);
+
+  if (!result.success) {
+    console.error("❌ Invalid environment variables:", result.error.format());
+    throw new Error("Invalid environment configuration. Please check your .env file.");
+  }
+
+  return {
+    ...result.data,
+    corsOrigins: result.data.CORS_ORIGIN.split(",").map((o) => o.trim()),
+    isProduction: result.data.NODE_ENV === "production",
+    isDevelopment: result.data.NODE_ENV === "development",
+    isTest: result.data.NODE_ENV === "test",
+  };
 };
+
+export const env = parseEnv();
+export type EnvConfig = typeof env;
+export default env;
