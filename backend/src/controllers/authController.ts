@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { authService } from "../services/authService";
+import { auditService } from "../services/auditService";
 import { ApiResponse } from "../utils/apiResponse";
 import { RegisterCitizenInput, LoginInput } from "../validators/authValidator";
 import { AuthenticatedRequest } from "../types";
@@ -13,6 +14,15 @@ export class AuthController {
     try {
       const input: RegisterCitizenInput = req.body;
       const result = await authService.registerCitizen(input);
+
+      await auditService.logAction({
+        actorId: result.user.id,
+        action: "AUTH_REGISTER",
+        entityType: "User",
+        entityId: result.user.id,
+        req,
+        metadata: { email: result.user.email, role: result.user.role },
+      });
 
       ApiResponse.created(
         res,
@@ -32,6 +42,15 @@ export class AuthController {
     try {
       const input: LoginInput = req.body;
       const result = await authService.login(input);
+
+      await auditService.logAction({
+        actorId: result.user.id,
+        action: "AUTH_LOGIN",
+        entityType: "User",
+        entityId: result.user.id,
+        req,
+        metadata: { email: result.user.email, role: result.user.role },
+      });
 
       ApiResponse.success(
         res,
@@ -68,6 +87,16 @@ export class AuthController {
    */
   async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const actorId = (req as any).user?.id || null;
+
+      await auditService.logAction({
+        actorId,
+        action: "AUTH_LOGOUT",
+        entityType: "User",
+        entityId: actorId,
+        req,
+      });
+
       ApiResponse.success(
         res,
         null,

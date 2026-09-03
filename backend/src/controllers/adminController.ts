@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../config/database";
+import { auditService } from "../services/auditService";
 import { ApiResponse } from "../utils/apiResponse";
 import { ApiError } from "../utils/apiError";
 import { AuthenticatedRequest } from "../types";
@@ -485,48 +486,26 @@ export class AdminController {
 
   /**
    * 10. GET /api/v1/admin/audit-logs
-   * Master forensic audit trail
+   * Master forensic audit trail with multi-criteria filters
    */
   async getAuditLogs(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { action, entityType, page = "1", limit = "20" } = req.query;
+      const { search, actorId, action, entityType, startDate, endDate, page = "1", limit = "20" } = req.query;
 
-      const pageNum = Math.max(1, parseInt(page as string, 10));
-      const pageSize = Math.max(1, Math.min(100, parseInt(limit as string, 10)));
-      const skip = (pageNum - 1) * pageSize;
-
-      const whereClause: any = {};
-      if (action && action !== "ALL") {
-        whereClause.action = { contains: action as string };
-      }
-      if (entityType && entityType !== "ALL") {
-        whereClause.entityType = entityType as string;
-      }
-
-      const [logs, total] = await Promise.all([
-        prisma.auditLog.findMany({
-          where: whereClause,
-          include: {
-            actor: { select: { id: true, fullName: true, email: true, role: true } },
-          },
-          orderBy: { createdAt: "desc" },
-          skip,
-          take: pageSize,
-        }),
-        prisma.auditLog.count({ where: whereClause }),
-      ]);
+      const result = await auditService.getAuditLogs({
+        search: search as string | undefined,
+        actorId: actorId as string | undefined,
+        action: action as string | undefined,
+        entityType: entityType as string | undefined,
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined,
+        page: parseInt(page as string, 10) || 1,
+        limit: parseInt(limit as string, 10) || 20,
+      });
 
       ApiResponse.success(
         res,
-        {
-          logs,
-          pagination: {
-            page: pageNum,
-            limit: pageSize,
-            total,
-            totalPages: Math.ceil(total / pageSize),
-          },
-        },
+        result,
         "System audit logs retrieved successfully"
       );
     } catch (error) {

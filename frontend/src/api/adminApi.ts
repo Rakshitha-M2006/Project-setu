@@ -88,6 +88,8 @@ export interface AdminAuditLogItem {
   action: string;
   entityType: string;
   entityId?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
   createdAt: string;
   actor?: {
     id: string;
@@ -95,6 +97,7 @@ export interface AdminAuditLogItem {
     email: string;
     role: Role;
   } | null;
+  changes?: any;
   metadata?: any;
 }
 
@@ -184,8 +187,12 @@ export const adminApi = {
   },
 
   getAuditLogs: async (params?: {
+    search?: string;
+    actorId?: string;
     action?: string;
     entityType?: string;
+    startDate?: string;
+    endDate?: string;
     page?: number;
     limit?: number;
   }): Promise<ApiResponse<{ logs: AdminAuditLogItem[]; pagination: any }>> => {

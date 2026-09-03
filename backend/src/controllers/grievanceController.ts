@@ -242,6 +242,24 @@ export class GrievanceController {
           },
         });
 
+        // 9. Append Immutable Audit Log
+        await tx.auditLog.create({
+          data: {
+            actorId: citizenId,
+            action: "GRIEVANCE_CREATED",
+            entityType: "Grievance",
+            entityId: created.id,
+            ipAddress: req.ip ? String(req.ip).slice(0, 100) : null,
+            userAgent: req.headers["user-agent"] ? String(req.headers["user-agent"]).slice(0, 255) : null,
+            metadata: {
+              trackingNumber,
+              department: routingDecision.departmentName,
+              priority: priorityAndSla.priority,
+              aiConfidence: aiAnalysis.confidence_score,
+            },
+          },
+        });
+
         return created;
       });
 
@@ -454,6 +472,22 @@ export class GrievanceController {
         },
         include: {
           statusHistories: true,
+        },
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          actorId,
+          action: `GRIEVANCE_STATUS_${status}`,
+          entityType: "Grievance",
+          entityId: id,
+          ipAddress: req.ip ? String(req.ip).slice(0, 100) : null,
+          userAgent: req.headers["user-agent"] ? String(req.headers["user-agent"]).slice(0, 255) : null,
+          changes: {
+            previousStatus: existing.status,
+            newStatus: status,
+            remarks,
+          },
         },
       });
 
