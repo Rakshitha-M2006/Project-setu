@@ -9,6 +9,7 @@ import {
   X,
   FileText,
   Home,
+  Bell,
 } from "lucide-react";
 
 export const Header: React.FC = () => {
@@ -102,6 +103,14 @@ export const Header: React.FC = () => {
                 >
                   <FileText className="w-4 h-4" />
                   <span>Workbench Portal</span>
+                </Link>
+
+                <Link
+                  to="/citizen/notifications"
+                  className="p-2 rounded-lg text-slate-600 hover:text-blue-700 hover:bg-blue-50 border border-slate-200 transition relative"
+                  title="Notifications Center"
+                >
+                  <Bell className="w-4 h-4" />
                 </Link>
 
                 <div className="h-5 w-px bg-slate-200" />
