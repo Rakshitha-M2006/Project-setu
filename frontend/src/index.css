@@ -3,7 +3,61 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col;
+  :root {
+    --gov-saffron: #ff9933;
+    --gov-navy: #0b2545;
+    --gov-green: #138808;
   }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col antialiased selection:bg-blue-100 selection:text-blue-900;
+  }
+
+  /* Accessible Focus Rings */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-blue-600 ring-offset-2 ring-offset-white;
+  }
+
+  /* Tabular numbers for financial, time, and statistical data */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* National Tricolor Top Stripe */
+.gov-tricolor-stripe {
+  height: 4px;
+  background: linear-gradient(90deg, #ff9933 0%, #ff9933 33.3%, #ffffff 33.3%, #ffffff 66.6%, #138808 66.6%, #138808 100%);
+  width: 100%;
+}
+
+/* Custom Clean Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Government Stamp Watermark & Subtle Badges */
+.gov-card-header {
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
 }

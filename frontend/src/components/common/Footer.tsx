@@ -111,7 +111,7 @@ export const Footer: React.FC = () => {
             <div className="pt-2">
               <span className="inline-flex items-center gap-1 text-[11px] bg-slate-900 border border-slate-800 text-slate-300 px-2.5 py-1 rounded">
                 <Globe className="w-3.5 h-3.5 text-blue-400" />
-                <span>Node.js • Prisma • MySQL • FastAPI</span>
+                <span>Node.js • Prisma • PostgreSQL • FastAPI</span>
               </span>
             </div>
           </div>

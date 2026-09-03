@@ -10,6 +10,7 @@ import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { Select } from "../../components/ui/Select";
 import { StatusBadge } from "../../components/ui/StatusBadge";
+import { Modal } from "../../components/ui/Modal";
 import {
   ArrowLeft,
   RefreshCw,
@@ -506,179 +507,161 @@ export const OfficerGrievanceDetailPage: React.FC = () => {
       </div>
 
       {/* 4. MODAL: Update Status & Resolve */}
-      {activeModal === "status" && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-6 border border-slate-200">
-            <div>
-              <h3 className="text-lg font-black text-slate-900">Update Grievance Status</h3>
-              <p className="text-xs text-slate-500">
-                Change state, record officer remarks, and mark complaint resolved
-              </p>
-            </div>
+      <Modal
+        isOpen={activeModal === "status"}
+        onClose={() => setActiveModal(null)}
+        title="Update Grievance Status"
+        description="Change state, record officer remarks, and mark complaint resolved"
+      >
+        <form onSubmit={handleUpdateStatus} className="space-y-4">
+          <Select
+            label="Target Status"
+            value={targetStatus}
+            onChange={(e) => setTargetStatus(e.target.value)}
+            options={[
+              { value: "IN_PROGRESS", label: "In Progress (Field Investigation)" },
+              { value: "UNDER_INSPECTION", label: "Under Inspection (On-site Visit)" },
+              { value: "RESOLVED", label: "Resolved (Action Completed)" },
+              { value: "REJECTED", label: "Rejected (Out of Scope / Invalid)" },
+              { value: "ESCALATED", label: "Escalated (Supervisor Review Required)" },
+            ]}
+          />
 
-            <form onSubmit={handleUpdateStatus} className="space-y-4">
-              <Select
-                label="Target Status"
-                value={targetStatus}
-                onChange={(e) => setTargetStatus(e.target.value)}
-                options={[
-                  { value: "IN_PROGRESS", label: "In Progress (Field Investigation)" },
-                  { value: "UNDER_INSPECTION", label: "Under Inspection (On-site Visit)" },
-                  { value: "RESOLVED", label: "Resolved (Action Completed)" },
-                  { value: "REJECTED", label: "Rejected (Out of Scope / Invalid)" },
-                  { value: "ESCALATED", label: "Escalated (Supervisor Review Required)" },
-                ]}
-              />
+          {targetStatus === "RESOLVED" && (
+            <Textarea
+              label="Official Resolution Summary (Citizen Visible)"
+              required
+              rows={3}
+              placeholder="Explain steps taken to fix the issue (e.g. Repaired 4-inch main pipeline, restored full water pressure)..."
+              value={resolutionSummary}
+              onChange={(e) => setResolutionSummary(e.target.value)}
+            />
+          )}
 
-              {targetStatus === "RESOLVED" && (
-                <Textarea
-                  label="Official Resolution Summary (Citizen Visible)"
-                  required
-                  rows={3}
-                  placeholder="Explain steps taken to fix the issue (e.g. Repaired 4-inch main pipeline, restored full water pressure)..."
-                  value={resolutionSummary}
-                  onChange={(e) => setResolutionSummary(e.target.value)}
-                />
-              )}
+          <Textarea
+            label="Officer Remarks / Audit Notes"
+            required
+            rows={3}
+            placeholder="Enter internal inspection notes and observations..."
+            value={actionRemarks}
+            onChange={(e) => setActionRemarks(e.target.value)}
+          />
 
-              <Textarea
-                label="Officer Remarks / Audit Notes"
-                required
-                rows={3}
-                placeholder="Enter internal inspection notes and observations..."
-                value={actionRemarks}
-                onChange={(e) => setActionRemarks(e.target.value)}
-              />
-
-              <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setActiveModal(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="sm"
-                  isLoading={isSubmittingAction}
-                  className="font-bold"
-                >
-                  Save Status Update
-                </Button>
-              </div>
-            </form>
+          <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveModal(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={isSubmittingAction}
+              className="font-bold"
+            >
+              Save Status Update
+            </Button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
 
       {/* 5. MODAL: Upload Verification Evidence */}
-      {activeModal === "evidence" && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-6 border border-slate-200">
-            <div>
-              <h3 className="text-lg font-black text-slate-900">Attach Resolution Evidence</h3>
-              <p className="text-xs text-slate-500">
-                Upload work completion photograph or official engineering inspection report
-              </p>
-            </div>
+      <Modal
+        isOpen={activeModal === "evidence"}
+        onClose={() => setActiveModal(null)}
+        title="Attach Resolution Evidence"
+        description="Upload work completion photograph or official engineering inspection report"
+      >
+        <form onSubmit={handleUploadEvidence} className="space-y-4">
+          <Input
+            label="Document / Exhibit Title"
+            required
+            placeholder="e.g. Site Repair Completion Photo - Oct 2026"
+            value={evidenceFileName}
+            onChange={(e) => setEvidenceFileName(e.target.value)}
+          />
 
-            <form onSubmit={handleUploadEvidence} className="space-y-4">
-              <Input
-                label="Document / Exhibit Title"
-                required
-                placeholder="e.g. Site Repair Completion Photo - Oct 2026"
-                value={evidenceFileName}
-                onChange={(e) => setEvidenceFileName(e.target.value)}
-              />
+          <Input
+            label="File Storage URL / Link"
+            required
+            placeholder="https://storage.projectsetu.gov.in/evidence/site_repair.jpg"
+            value={evidenceFileUrl}
+            onChange={(e) => setEvidenceFileUrl(e.target.value)}
+          />
 
-              <Input
-                label="File Storage URL / Link"
-                required
-                placeholder="https://storage.projectsetu.gov.in/evidence/site_repair.jpg"
-                value={evidenceFileUrl}
-                onChange={(e) => setEvidenceFileUrl(e.target.value)}
-              />
+          <Textarea
+            label="Officer Verification Notes"
+            rows={2}
+            placeholder="Provide context regarding the uploaded verification document..."
+            value={evidenceRemarks}
+            onChange={(e) => setEvidenceRemarks(e.target.value)}
+          />
 
-              <Textarea
-                label="Officer Verification Notes"
-                rows={2}
-                placeholder="Provide context regarding the uploaded verification document..."
-                value={evidenceRemarks}
-                onChange={(e) => setEvidenceRemarks(e.target.value)}
-              />
-
-              <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setActiveModal(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="sm"
-                  isLoading={isSubmittingAction}
-                  className="font-bold"
-                >
-                  Attach Evidence
-                </Button>
-              </div>
-            </form>
+          <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveModal(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={isSubmittingAction}
+              className="font-bold"
+            >
+              Attach Evidence
+            </Button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
 
       {/* 6. MODAL: Request Info from Citizen */}
-      {activeModal === "request_info" && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-6 border border-slate-200">
-            <div>
-              <h3 className="text-lg font-black text-slate-900">Request Information from Citizen</h3>
-              <p className="text-xs text-slate-500">
-                Sends a high-priority alert to the complainant requesting additional details or landmark clarification
-              </p>
-            </div>
+      <Modal
+        isOpen={activeModal === "request_info"}
+        onClose={() => setActiveModal(null)}
+        title="Request Information from Citizen"
+        description="Sends a high-priority alert to the complainant requesting additional details or landmark clarification"
+      >
+        <form onSubmit={handleRequestInfo} className="space-y-4">
+          <Textarea
+            label="Information Request Message"
+            required
+            rows={4}
+            placeholder="e.g. Please provide the exact house number or electricity pole number near the faulty transformer..."
+            value={infoRequestMessage}
+            onChange={(e) => setInfoRequestMessage(e.target.value)}
+          />
 
-            <form onSubmit={handleRequestInfo} className="space-y-4">
-              <Textarea
-                label="Information Request Message"
-                required
-                rows={4}
-                placeholder="e.g. Please provide the exact house number or electricity pole number near the faulty transformer..."
-                value={infoRequestMessage}
-                onChange={(e) => setInfoRequestMessage(e.target.value)}
-              />
-
-              <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setActiveModal(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="sm"
-                  isLoading={isSubmittingAction}
-                  className="font-bold bg-amber-700 hover:bg-amber-800 text-white"
-                  rightIcon={<Send className="w-3.5 h-3.5" />}
-                >
-                  Dispatch Request
-                </Button>
-              </div>
-            </form>
+          <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveModal(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={isSubmittingAction}
+              className="font-bold bg-amber-700 hover:bg-amber-800 text-white"
+              rightIcon={<Send className="w-3.5 h-3.5" />}
+            >
+              Dispatch Request
+            </Button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
     </div>
   );
 };
