@@ -21,11 +21,14 @@ export const AdminLayout: React.FC = () => {
 
   const navItems = [
     { label: "Admin Dashboard", path: "/admin", icon: <ShieldAlert className="w-4 h-4" /> },
-    { label: "Departments Master", path: "/admin/departments", icon: <Building className="w-4 h-4" /> },
     { label: "User Management", path: "/admin/users", icon: <Users2 className="w-4 h-4" /> },
-    { label: "AI Pipeline Engine", path: "/admin/ai-engine", icon: <Cpu className="w-4 h-4" /> },
-    { label: "System Audit Logs", path: "/admin/audit-logs", icon: <History className="w-4 h-4" /> },
-    { label: "System Health & Metrics", path: "/admin/system-health", icon: <Activity className="w-4 h-4" /> },
+    { label: "Officer Staffing", path: "/admin/officers", icon: <Users2 className="w-4 h-4" /> },
+    { label: "Departments Master", path: "/admin/departments", icon: <Building className="w-4 h-4" /> },
+    { label: "Grievances Master", path: "/admin/grievances", icon: <Building className="w-4 h-4" /> },
+    { label: "Public Services", path: "/admin/services", icon: <Building className="w-4 h-4" /> },
+    { label: "Analytics Intelligence", path: "/admin/analytics", icon: <Activity className="w-4 h-4" /> },
+    { label: "Forensic Audit Logs", path: "/admin/audit-logs", icon: <History className="w-4 h-4" /> },
+    { label: "AI Pipeline Monitoring", path: "/admin/ai-monitoring", icon: <Cpu className="w-4 h-4" /> },
   ];
 
   return (

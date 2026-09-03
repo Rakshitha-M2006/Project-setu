@@ -43,6 +43,16 @@ import OfficerProfilePage from "./pages/officer/OfficerProfilePage";
 import SeniorOfficerDashboard from "./pages/dashboards/SeniorOfficerDashboard";
 import AdminDashboard from "./pages/dashboards/AdminDashboard";
 
+// Admin Portal Pages
+import AdminUsersPage from "./pages/admin/AdminUsersPage";
+import AdminOfficersPage from "./pages/admin/AdminOfficersPage";
+import AdminDepartmentsPage from "./pages/admin/AdminDepartmentsPage";
+import AdminGrievancesPage from "./pages/admin/AdminGrievancesPage";
+import AdminServicesPage from "./pages/admin/AdminServicesPage";
+import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage";
+import AdminAuditLogsPage from "./pages/admin/AdminAuditLogsPage";
+import AdminAiMonitoringPage from "./pages/admin/AdminAiMonitoringPage";
+
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
@@ -118,11 +128,15 @@ export const App: React.FC = () => {
               }
             >
               <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/departments" element={<AdminDashboard />} />
-              <Route path="/admin/users" element={<AdminDashboard />} />
-              <Route path="/admin/ai-engine" element={<AdminDashboard />} />
-              <Route path="/admin/audit-logs" element={<AdminDashboard />} />
-              <Route path="/admin/system-health" element={<AdminDashboard />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/users" element={<AdminUsersPage />} />
+              <Route path="/admin/officers" element={<AdminOfficersPage />} />
+              <Route path="/admin/departments" element={<AdminDepartmentsPage />} />
+              <Route path="/admin/grievances" element={<AdminGrievancesPage />} />
+              <Route path="/admin/services" element={<AdminServicesPage />} />
+              <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+              <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
+              <Route path="/admin/ai-monitoring" element={<AdminAiMonitoringPage />} />
             </Route>
 
             {/* 6. Fallback 404 Catch-all */}
