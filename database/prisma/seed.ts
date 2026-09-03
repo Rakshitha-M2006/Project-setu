@@ -437,7 +437,7 @@ async function main() {
   console.log("\n🧪 Seeding Realistic Development Grievances...");
 
   // Grievance 1: Power Outage
-  await prisma.grievance.upsert({
+  const g1 = await prisma.grievance.upsert({
     where: { trackingNumber: "SETU-2026-ELC-001245" },
     update: {},
     create: {

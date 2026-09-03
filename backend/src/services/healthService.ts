@@ -64,7 +64,7 @@ export class HealthService {
       dependencies: {
         database: {
           status: dbResult.connected ? "connected" : "disconnected",
-          engine: "MySQL 8.0+ (Prisma ORM)",
+          engine: "PostgreSQL 14+ (Prisma ORM)",
           responseTimeMs: dbResult.responseTimeMs,
           error: dbResult.error,
         },

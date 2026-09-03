@@ -10,7 +10,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(5000),
   HOST: z.string().default("0.0.0.0"),
   API_PREFIX: z.string().default("/api/v1"),
-  DATABASE_URL: z.string().default("mysql://root:password@localhost:3306/project_setu_db"),
+  DATABASE_URL: z.string().default("postgresql://postgres:postgres@localhost:5432/project_setu?schema=public"),
   JWT_SECRET: z.string().default("setu_jwt_super_secret_development_key_change_in_production"),
   JWT_EXPIRES_IN: z.string().default("7d"),
   AI_SERVICE_URL: z.string().default("http://localhost:8000"),
