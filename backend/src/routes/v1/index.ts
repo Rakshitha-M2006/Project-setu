@@ -11,6 +11,7 @@ import slaRoutes from "./slaRoutes";
 import uploadRoutes from "./uploadRoutes";
 import adminRoutes from "./adminRoutes";
 import analyticsRoutes from "./analyticsRoutes";
+import anomalyRoutes from "./anomalyRoutes";
 import { requireAuth, requireRole, requireAnyRole } from "../../middleware/authMiddleware";
 import { ApiResponse } from "../../utils/apiResponse";
 import { Role } from "@prisma/client";
@@ -31,6 +32,9 @@ router.use("/officer", officerRoutes);
 
 // Super Administrator Endpoints
 router.use("/admin", adminRoutes);
+
+// Anomaly Detection & Incident Surveillance
+router.use("/anomalies", anomalyRoutes);
 
 // Cross-Platform Analytics & Intelligence
 router.use("/analytics", analyticsRoutes);

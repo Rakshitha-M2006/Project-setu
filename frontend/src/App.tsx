@@ -52,6 +52,7 @@ import AdminServicesPage from "./pages/admin/AdminServicesPage";
 import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage";
 import AdminAuditLogsPage from "./pages/admin/AdminAuditLogsPage";
 import AdminAiMonitoringPage from "./pages/admin/AdminAiMonitoringPage";
+import AdminAnomaliesPage from "./pages/admin/AdminAnomaliesPage";
 
 export const App: React.FC = () => {
   return (
@@ -129,6 +130,7 @@ export const App: React.FC = () => {
             >
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/anomalies" element={<AdminAnomaliesPage />} />
               <Route path="/admin/users" element={<AdminUsersPage />} />
               <Route path="/admin/officers" element={<AdminOfficersPage />} />
               <Route path="/admin/departments" element={<AdminDepartmentsPage />} />

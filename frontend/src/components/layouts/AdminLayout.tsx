@@ -12,6 +12,7 @@ import {
   History,
   Settings,
   Cpu,
+  Flame,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
 
@@ -21,6 +22,7 @@ export const AdminLayout: React.FC = () => {
 
   const navItems = [
     { label: "Admin Dashboard", path: "/admin", icon: <ShieldAlert className="w-4 h-4" /> },
+    { label: "Anomaly Surveillance", path: "/admin/anomalies", icon: <Flame className="w-4 h-4 text-rose-400" /> },
     { label: "User Management", path: "/admin/users", icon: <Users2 className="w-4 h-4" /> },
     { label: "Officer Staffing", path: "/admin/officers", icon: <Users2 className="w-4 h-4" /> },
     { label: "Departments Master", path: "/admin/departments", icon: <Building className="w-4 h-4" /> },

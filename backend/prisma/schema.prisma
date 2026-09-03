@@ -239,6 +239,7 @@ model Department {
   services            GovernmentService[]
   serviceApplications ServiceApplication[]
   aiClassifications   AIClassification[]
+  anomalies           AnomalyRecord[]
 
   @@index([code])
   @@index([isActive])
@@ -573,4 +574,50 @@ model AuditLog {
   @@index([action])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ------------------------------------------------------------------------------
+// 6. ANOMALY DETECTION & SURVEILLANCE ENGINE
+// ------------------------------------------------------------------------------
+
+enum AnomalyStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  FALSE_POSITIVE
+}
+
+enum AnomalySeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model AnomalyRecord {
+  id                 String          @id @default(uuid())
+  departmentId       String?
+  department         Department?     @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  locationPincode    String?
+  locationArea       String?
+  anomalyType        String          @default("VOLUME_SPIKE")
+  severity           AnomalySeverity @default(HIGH)
+  status             AnomalyStatus   @default(OPEN)
+  baselineCount      Float           // Rolling average baseline count
+  currentCount       Int             // Incident count in evaluation window
+  percentageIncrease Float           // e.g. 650.0%
+  zScore             Float?          // Statistical standard deviations from baseline
+  description        String          @db.Text
+  investigationNotes String?         @db.Text
+  detectedAt         DateTime        @default(now())
+  resolvedAt         DateTime?
+  resolvedById       String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([departmentId])
+  @@index([status])
+  @@index([severity])
+  @@index([detectedAt])
+  @@map("anomaly_records")
 }
