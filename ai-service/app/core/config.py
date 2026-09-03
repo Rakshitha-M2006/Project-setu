@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     # Configurable confidence threshold for human review
     CONFIDENCE_THRESHOLD: float = float(os.getenv("AI_CONFIDENCE_THRESHOLD", "0.85"))
     MODEL_VERSION: str = "1.0.0-nlp-rules"
+    INTERNAL_API_SECRET: str = os.getenv("SETU_INTERNAL_API_KEY", "setu_internal_microservice_secret_key_2026")
 
     class Config:
         env_file = ".env"

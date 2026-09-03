@@ -262,12 +262,35 @@ export class UploadController {
 
   /**
    * 5. GET /api/v1/uploads/files/:folder/:fileName
-   * Securely stream file with MIME validation, caching headers, and authorization check
+   * Securely stream file with MIME validation, IDOR authorization, and caching headers
    */
   async getSecureFile(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { folder, fileName } = req.params;
+      const user = req.user!;
       const fileKey = `${folder}/${fileName}`;
+
+      // IDOR Protection: Check database permissions if file belongs to a grievance or application
+      if (user.role === Role.CITIZEN) {
+        const [grievanceAtt, serviceDoc] = await Promise.all([
+          prisma.grievanceAttachment.findFirst({
+            where: { fileName },
+            include: { grievance: { select: { citizenId: true } } },
+          }),
+          prisma.serviceDocument.findFirst({
+            where: { fileName },
+            include: { serviceApplication: { select: { citizenId: true } } },
+          }),
+        ]);
+
+        if (grievanceAtt && grievanceAtt.uploadedById !== user.id && grievanceAtt.grievance.citizenId !== user.id) {
+          throw ApiError.forbidden("You are not authorized to view this document");
+        }
+
+        if (serviceDoc && serviceDoc.uploadedById !== user.id && serviceDoc.serviceApplication.citizenId !== user.id) {
+          throw ApiError.forbidden("You are not authorized to view this application document");
+        }
+      }
 
       const { stream, mimeType, fileSizeBytes } = await storageService.getFileStream(fileKey);
 

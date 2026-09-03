@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authController } from "../../controllers/authController";
 import { validateRequest } from "../../middleware/validate";
 import { requireAuth } from "../../middleware/authMiddleware";
+import { authRateLimiter } from "../../middleware/rateLimitMiddleware";
 import {
   registerCitizenSchema,
   loginSchema,
@@ -12,10 +13,11 @@ const router = Router();
 /**
  * @route   POST /api/v1/auth/register
  * @desc    Register a new citizen account
- * @access  Public
+ * @access  Public (Rate-limited)
  */
 router.post(
   "/register",
+  authRateLimiter,
   validateRequest(registerCitizenSchema),
   (req, res, next) => authController.register(req, res, next)
 );
@@ -23,10 +25,11 @@ router.post(
 /**
  * @route   POST /api/v1/auth/login
  * @desc    Authenticate user credentials and issue JWT
- * @access  Public
+ * @access  Public (Rate-limited)
  */
 router.post(
   "/login",
+  authRateLimiter,
   validateRequest(loginSchema),
   (req, res, next) => authController.login(req, res, next)
 );

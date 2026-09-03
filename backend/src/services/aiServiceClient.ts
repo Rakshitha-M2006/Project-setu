@@ -10,6 +10,7 @@ export class AiServiceClient {
     headers: {
       "Content-Type": "application/json",
       "User-Agent": "ProjectSetu-Backend/1.0",
+      "X-Internal-API-Key": env.INTERNAL_API_SECRET,
     },
   });
 

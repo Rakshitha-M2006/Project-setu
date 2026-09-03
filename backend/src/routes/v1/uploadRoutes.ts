@@ -2,6 +2,7 @@ import { Router } from "express";
 import { uploadController } from "../../controllers/uploadController";
 import { uploadSingle } from "../../middleware/uploadMiddleware";
 import { requireAuth, requireAnyRole } from "../../middleware/authMiddleware";
+import { uploadRateLimiter } from "../../middleware/rateLimitMiddleware";
 import { Role } from "@prisma/client";
 
 const router = Router();
@@ -13,6 +14,7 @@ router.get("/files/:folder/:fileName", requireAuth, (req, res, next) =>
 
 // Private Upload Endpoints
 router.use(requireAuth);
+router.use(uploadRateLimiter);
 
 router.post("/general", uploadSingle, (req, res, next) =>
   uploadController.uploadGeneralFile(req, res, next)
