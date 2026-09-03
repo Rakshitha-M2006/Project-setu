@@ -14,6 +14,8 @@ const envSchema = z.object({
   JWT_SECRET: z.string().default("setu_jwt_super_secret_development_key_change_in_production"),
   JWT_EXPIRES_IN: z.string().default("7d"),
   AI_SERVICE_URL: z.string().default("http://localhost:8000"),
+  AI_CONFIDENCE_THRESHOLD: z.coerce.number().default(0.85),
+  AI_REQUEST_TIMEOUT_MS: z.coerce.number().default(5000),
   CORS_ORIGIN: z.string().default("http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173"),
   LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),
 });

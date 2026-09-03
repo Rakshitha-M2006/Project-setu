@@ -1,8 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { prisma } from "../config/database";
+import { env } from "../config/env";
 import { ApiResponse } from "../utils/apiResponse";
 import { ApiError } from "../utils/apiError";
+import { logger } from "../utils/logger";
+import { AiServiceClient } from "../services/aiServiceClient";
 import { AuthenticatedRequest } from "../types";
 import { Priority, GrievanceStatus, NotificationType, StorageProvider } from "@prisma/client";
 
@@ -62,7 +65,7 @@ export const updateStatusSchema = z.object({
 });
 
 /**
- * Helper to generate human-readable department prefix
+ * Helper to generate human-readable department prefix for reference tokens
  */
 const getDepartmentPrefix = (deptCode?: string | null): string => {
   if (!deptCode) return "GEN";
@@ -70,17 +73,16 @@ const getDepartmentPrefix = (deptCode?: string | null): string => {
   if (upper.includes("WATER") || upper.includes("WTR")) return "WTR";
   if (upper.includes("ELEC") || upper.includes("POWER") || upper.includes("ELC")) return "ELC";
   if (upper.includes("ROAD") || upper.includes("PWD") || upper.includes("WORKS")) return "PWD";
-  if (upper.includes("HEALTH") || upper.includes("HLT") || upper.includes("MED")) return "HLT";
+  if (upper.includes("HEALTH") || upper.includes("HLT") || upper.includes("MED") || upper.includes("SAN")) return "HLT";
   if (upper.includes("REV") || upper.includes("LAND")) return "REV";
   if (upper.includes("WOMEN") || upper.includes("CHILD") || upper.includes("WCD")) return "WCD";
-  if (upper.includes("SAN") || upper.includes("MUNI") || upper.includes("SWM")) return "SWM";
   return upper.slice(0, 3);
 };
 
 export class GrievanceController {
   /**
    * POST /api/v1/grievances
-   * Submit a new citizen grievance with reference ID generation, location linking, and audit trail
+   * Submit a new citizen grievance with AI classification, reference ID, and audit trail
    */
   async submitGrievance(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -101,10 +103,18 @@ export class GrievanceController {
         attachments,
       } = req.body;
 
-      // 1. Resolve department and category if provided
+      // 1. Dispatch to Python FastAPI AI Classification Service (with safe failover fallback)
+      const aiAnalysis = await AiServiceClient.analyzeGrievance(
+        title,
+        description,
+        addressText || locality,
+        pincode
+      );
+
+      // 2. Resolve department from citizen selection or AI recommendation
       let targetDeptId = departmentId || null;
       let targetCatId = categoryId || null;
-      let deptCode = "GEN";
+      let deptCode = aiAnalysis.department_code || "GEN";
 
       if (targetCatId && !targetDeptId) {
         const cat = await prisma.grievanceCategory.findUnique({
@@ -122,14 +132,30 @@ export class GrievanceController {
         if (dept) {
           deptCode = dept.code;
         }
+      } else if (!targetDeptId && !aiAnalysis.requires_human_review && aiAnalysis.department_code) {
+        // AI Auto-Routing allowed if confidence >= threshold (0.85)
+        const matchedDept = await prisma.department.findFirst({
+          where: {
+            OR: [
+              { code: aiAnalysis.department_code },
+              { code: { contains: aiAnalysis.department_code } },
+              { name: { contains: aiAnalysis.department } },
+            ],
+          },
+        });
+        if (matchedDept) {
+          targetDeptId = matchedDept.id;
+          deptCode = matchedDept.code;
+        }
       }
 
+      // 3. Generate human-readable reference number (e.g. SETU-2026-ELC-001245)
       const prefix = getDepartmentPrefix(deptCode);
       const currentYear = new Date().getFullYear();
       const randomSeq = String(Math.floor(100000 + Math.random() * 900000));
       const trackingNumber = `SETU-${currentYear}-${prefix}-${randomSeq}`;
 
-      // 2. Resolve or create Location entity if coordinates or address provided
+      // 4. Resolve or create Location entity if coordinates or address provided
       let locationId: string | null = null;
       if (latitude || longitude || pincode || district || state) {
         const newLocation = await prisma.location.create({
@@ -145,15 +171,24 @@ export class GrievanceController {
         locationId = newLocation.id;
       }
 
-      // Combine description with additional details if provided
+      // 5. Determine Initial Status and Remarks based on Confidence Threshold
+      const isAutoTriaged = !aiAnalysis.requires_human_review && aiAnalysis.confidence_score >= env.AI_CONFIDENCE_THRESHOLD;
+      const initialStatus = isAutoTriaged ? GrievanceStatus.AI_TRIAGED : GrievanceStatus.SUBMITTED;
+      const priorityValue = (aiAnalysis.priority as Priority) || Priority.MEDIUM;
+
+      const initialRemark = isAutoTriaged
+        ? `Grievance triaged automatically by AI to '${aiAnalysis.department}' with ${priorityValue} priority (Confidence: ${(aiAnalysis.confidence_score * 100).toFixed(1)}%).`
+        : `Grievance registered. AI confidence (${(aiAnalysis.confidence_score * 100).toFixed(1)}%) < ${(env.AI_CONFIDENCE_THRESHOLD * 100).toFixed(0)}% threshold — Flagged for manual human officer review.`;
+
+      // 6. SLA Calculation (default 48h or AI suggested)
+      const slaHours = aiAnalysis.estimated_sla_hours || 48;
+      const slaDeadline = new Date(Date.now() + slaHours * 60 * 60 * 1000);
+
       const finalDescription = additionalDetails
         ? `${description}\n\n[Additional Details]: ${additionalDetails}`
         : description;
 
-      // 3. Default SLA (48 hours for standard submission)
-      const slaDeadline = new Date(Date.now() + 48 * 60 * 60 * 1000);
-
-      // 4. Create Grievance with Status History and Attachments in a single atomic transaction
+      // 7. Atomic MySQL Persistence
       const grievance = await prisma.$transaction(async (tx) => {
         const created = await tx.grievance.create({
           data: {
@@ -166,17 +201,35 @@ export class GrievanceController {
             description: finalDescription.trim(),
             addressText: addressText ? addressText.trim() : null,
             pincode: pincode && pincode.trim() ? pincode.trim() : null,
-            status: GrievanceStatus.SUBMITTED,
-            priority: Priority.PENDING_AI,
-            isUrgent: false,
+            status: initialStatus,
+            priority: priorityValue,
+            isUrgent: aiAnalysis.is_urgent,
             slaDeadline,
+            aiClassification: {
+              create: {
+                predictedDepartmentId: targetDeptId,
+                predictedDepartmentCode: aiAnalysis.department_code,
+                confidenceScore: aiAnalysis.confidence_score,
+                priorityScore: priorityValue,
+                detectedSentiment: aiAnalysis.sentiment,
+                extractedKeywords: aiAnalysis.extracted_keywords,
+                suggestedSlaHours: slaHours,
+                modelVersion: aiAnalysis.model_version || "1.0.0-nlp-rules",
+                rawInference: {
+                  summary: aiAnalysis.summary,
+                  issue_type: aiAnalysis.issue_type,
+                  requires_human_review: aiAnalysis.requires_human_review,
+                  confidence_threshold: env.AI_CONFIDENCE_THRESHOLD,
+                },
+              },
+            },
             statusHistories: {
               create: {
                 actorId: citizenId,
-                actionTaken: "GRIEVANCE_SUBMITTED",
+                actionTaken: isAutoTriaged ? "GRIEVANCE_AI_TRIAGED" : "GRIEVANCE_SUBMITTED",
                 previousStatus: null,
-                newStatus: GrievanceStatus.SUBMITTED,
-                remarks: "Grievance submitted by citizen and pending departmental review.",
+                newStatus: initialStatus,
+                remarks: initialRemark,
               },
             },
             attachments: attachments && attachments.length > 0
@@ -197,18 +250,19 @@ export class GrievanceController {
             department: true,
             category: true,
             location: true,
+            aiClassification: true,
             attachments: true,
             statusHistories: true,
           },
         });
 
-        // 5. Generate In-App Notification for the Citizen
+        // 8. Create In-App Notification for Citizen
         await tx.notification.create({
           data: {
             recipientId: citizenId,
             type: NotificationType.GRIEVANCE_STATUS_UPDATE,
             title: `Grievance Lodged: ${trackingNumber}`,
-            message: `Your grievance '${title}' has been recorded under reference ID ${trackingNumber}. You can track its live resolution progress anytime.`,
+            message: `Your grievance '${title}' has been registered under reference ${trackingNumber}. Priority: ${priorityValue}, Target SLA: ${slaHours} hrs.`,
             linkUrl: `/citizen/grievances/${created.id}`,
           },
         });
@@ -218,8 +272,12 @@ export class GrievanceController {
 
       ApiResponse.created(
         res,
-        { grievance, trackingNumber: grievance.trackingNumber },
-        "Grievance submitted successfully"
+        {
+          grievance,
+          trackingNumber: grievance.trackingNumber,
+          aiAnalysis,
+        },
+        "Grievance submitted and triaged successfully"
       );
     } catch (error) {
       next(error);
@@ -258,6 +316,14 @@ export class GrievanceController {
           department: { select: { id: true, name: true, code: true } },
           category: { select: { id: true, name: true, code: true } },
           location: true,
+          aiClassification: {
+            select: {
+              confidenceScore: true,
+              priorityScore: true,
+              detectedSentiment: true,
+              suggestedSlaHours: true,
+            },
+          },
           attachments: true,
           statusHistories: {
             orderBy: { createdAt: "asc" },
@@ -282,7 +348,6 @@ export class GrievanceController {
       const { id } = req.params;
       const user = req.user!;
 
-      // Lookup by primary key ID or unique human-readable trackingNumber
       const grievance = await prisma.grievance.findFirst({
         where: {
           OR: [{ id }, { trackingNumber: id }],
@@ -295,6 +360,7 @@ export class GrievanceController {
             select: { id: true, fullName: true, email: true, phone: true },
           },
           attachments: true,
+          aiClassification: true,
           assignments: {
             include: {
               officerProfile: {
@@ -313,7 +379,6 @@ export class GrievanceController {
           },
           escalations: true,
           feedback: true,
-          aiClassification: true,
         },
       });
 
@@ -349,6 +414,8 @@ export class GrievanceController {
 
       if (user.role === "CITIZEN") {
         whereClause.citizenId = user.id;
+      } else if ((user.role === "OFFICER" || user.role === "SENIOR_OFFICER") && user.departmentId) {
+        whereClause.departmentId = user.departmentId;
       }
 
       const grievances = await prisma.grievance.findMany({
@@ -358,6 +425,7 @@ export class GrievanceController {
           category: { select: { id: true, name: true } },
           citizen: { select: { id: true, fullName: true, email: true, phone: true } },
           location: true,
+          aiClassification: true,
           attachments: true,
           statusHistories: {
             orderBy: { createdAt: "asc" },

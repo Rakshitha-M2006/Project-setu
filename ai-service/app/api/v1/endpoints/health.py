@@ -9,6 +9,7 @@ def health_check():
     return HealthResponse(
         status="healthy",
         service=settings.PROJECT_NAME,
-        version="1.0.0",
-        environment=settings.ENVIRONMENT
+        version=settings.MODEL_VERSION,
+        environment=settings.ENVIRONMENT,
+        confidence_threshold=settings.CONFIDENCE_THRESHOLD,
     )

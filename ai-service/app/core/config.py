@@ -12,8 +12,11 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://127.0.0.1:5000",
         "http://127.0.0.1:5173",
+        "*"
     ]
-    CONFIDENCE_THRESHOLD: float = 0.65
+    # Configurable confidence threshold for human review
+    CONFIDENCE_THRESHOLD: float = float(os.getenv("AI_CONFIDENCE_THRESHOLD", "0.85"))
+    MODEL_VERSION: str = "1.0.0-nlp-rules"
 
     class Config:
         env_file = ".env"

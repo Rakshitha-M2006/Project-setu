@@ -1,4 +1,3 @@
-from app.models.schemas import PriorityEnum
 from typing import Tuple
 
 class PriorityDetector:
@@ -7,37 +6,39 @@ class PriorityDetector:
     """
 
     CRITICAL_KEYWORDS = {
-        "spark", "fire", "electrocution", "collapse", "gas leak", "burst",
-        "emergency", "poisonous", "contamination", "fatal", "casualty", "danger"
+        "spark", "sparking", "fire", "electrocution", "collapse", "gas leak", "burst",
+        "emergency", "poisonous", "contamination", "fatal", "casualty", "danger",
+        "live wire", "open manhole", "deep crater accident", "short circuit"
     }
 
     HIGH_KEYWORDS = {
         "overflow", "hospital", "patient", "dengue", "accident", "broken wire",
-        "no water", "blackout", "urgent", "hazard", "deep pothole"
+        "no water", "blackout", "outage", "urgent", "hazard", "deep pothole",
+        "power cut", "powercut", "no electricity", "waterlogging", "stench", "cholera"
     }
 
     MEDIUM_KEYWORDS = {
         "delay", "garbage", "meter", "billing", "street light", "cleaning",
-        "slow", "pothole", "stench", "maintenance"
+        "slow", "pothole", "maintenance", "certificate", "mutation", "noise"
     }
 
     @classmethod
-    def evaluate_priority(cls, text: str) -> Tuple[PriorityEnum, int, bool]:
+    def evaluate_priority(cls, text: str) -> Tuple[str, int, bool]:
         """
-        Returns (PriorityEnum, estimated_sla_hours, is_urgent)
+        Returns (priority_str, estimated_sla_hours, is_urgent)
         """
         lower = text.lower()
 
         for kw in cls.CRITICAL_KEYWORDS:
             if kw in lower:
-                return PriorityEnum.CRITICAL, 6, True
+                return "CRITICAL", 6, True
 
         for kw in cls.HIGH_KEYWORDS:
             if kw in lower:
-                return PriorityEnum.HIGH, 24, True
+                return "HIGH", 24, True
 
         for kw in cls.MEDIUM_KEYWORDS:
             if kw in lower:
-                return PriorityEnum.MEDIUM, 48, False
+                return "MEDIUM", 48, False
 
-        return PriorityEnum.LOW, 72, False
+        return "LOW", 72, False

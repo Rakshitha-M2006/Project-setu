@@ -17,7 +17,10 @@ export interface AuthenticatedRequest extends Request {
 
 export interface GrievanceAIAnalysisResult {
   category: string;
-  suggested_department: string;
+  department: string;
+  department_code: string;
+  suggested_department?: string;
+  issue_type: string;
   confidence_score: number;
   priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   estimated_sla_hours: number;
@@ -25,6 +28,10 @@ export interface GrievanceAIAnalysisResult {
   sentiment: string;
   is_urgent: boolean;
   summary: string;
+  requires_human_review: boolean;
+  is_below_threshold: boolean;
+  model_version?: string;
+  raw_inference?: Record<string, any>;
 }
 
 export interface HealthCheckResponse {
