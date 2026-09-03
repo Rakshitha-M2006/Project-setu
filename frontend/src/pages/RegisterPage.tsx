@@ -1,132 +1,265 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { axiosClient } from "../api/axiosClient";
-import { UserPlus, AlertCircle } from "lucide-react";
+import { useToast } from "../context/ToastContext";
+import { authApi } from "../api/authApi";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { Select } from "../components/ui/Select";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/Card";
+import { Alert } from "../components/ui/Alert";
+import { Gender } from "../types";
+import { Landmark, Mail, Lock, User, Phone, MapPin, ArrowRight } from "lucide-react";
 
 export const RegisterPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const toast = useToast();
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [gender, setGender] = useState<Gender | "">("");
+  const [addressLine1, setAddressLine1] = useState("");
+  const [pincode, setPincode] = useState("");
+  const [occupation, setOccupation] = useState("");
+  const [agreeTerms, setAgreeTerms] = useState(false);
 
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    setErrorMsg(null);
+
+    // Form Validations
+    if (!fullName || !email || !password) {
+      setErrorMsg("Please fill in all mandatory fields.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMsg("Password must be at least 6 characters long.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMsg("Passwords do not match. Please re-enter.");
+      return;
+    }
+
+    if (pincode && !/^[1-9][0-9]{5}$/.test(pincode)) {
+      setErrorMsg("Please enter a valid 6-digit Indian PIN code.");
+      return;
+    }
+
+    if (!agreeTerms) {
+      setErrorMsg("Please agree to the Citizen Declarations & Terms of Service.");
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
-      const response = await axiosClient.post("/auth/register", {
+      const response = await authApi.register({
         fullName,
         email,
-        phone: phone || undefined,
         password,
-        role: "CITIZEN",
+        phone: phone || null,
+        gender: (gender as Gender) || null,
+        addressLine1: addressLine1 || null,
+        pincode: pincode || null,
+        occupation: occupation || null,
       });
 
-      const { user, token } = response.data.data;
-      login(token, user);
-      navigate("/citizen");
+      if (response.success && response.data) {
+        const { token, user } = response.data;
+        login(token, user);
+        toast.success(`Welcome to SETU, ${user.fullName}!`, "Account Registered");
+        navigate("/citizen", { replace: true });
+      } else {
+        setErrorMsg(response.message || "Registration failed. Please try again.");
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Registration failed. Please try again.");
+      const message =
+        err.response?.data?.message ||
+        "Registration could not be completed. An account with this email or phone may already exist.";
+      setErrorMsg(message);
+      toast.error(message, "Registration Error");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto my-8 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-      <div className="text-center space-y-2">
-        <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mx-auto">
-          <UserPlus className="w-6 h-6" />
+    <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-xl space-y-6">
+        {/* Brand Header */}
+        <div className="text-center space-y-2">
+          <div className="w-12 h-12 rounded-2xl bg-blue-700 text-amber-400 flex items-center justify-center mx-auto shadow-md">
+            <Landmark className="w-6 h-6" />
+          </div>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight font-serif">
+            Citizen Registration
+          </h2>
+          <p className="text-xs text-slate-500">
+            Create your verified Citizen account on PROJECT SETU
+          </p>
         </div>
-        <h2 className="text-2xl font-bold text-slate-900">Create Citizen Account</h2>
-        <p className="text-sm text-slate-500">Fast and direct access to public grievance redressal</p>
+
+        <Card className="border-slate-200 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base">Citizen Enrollment Form</CardTitle>
+            <CardDescription>
+              All submissions are encrypted and routed under Government Data Protection Standards
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            {errorMsg && (
+              <Alert variant="danger" onClose={() => setErrorMsg(null)}>
+                {errorMsg}
+              </Alert>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="Full Name"
+                  required
+                  placeholder="e.g. Ramesh Chandra"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  leftIcon={<User className="w-4 h-4" />}
+                />
+
+                <Input
+                  label="Mobile Number"
+                  type="tel"
+                  placeholder="+91 9876543210"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  leftIcon={<Phone className="w-4 h-4" />}
+                />
+              </div>
+
+              <Input
+                label="Email Address"
+                type="email"
+                required
+                placeholder="citizen@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                leftIcon={<Mail className="w-4 h-4" />}
+              />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="Password"
+                  type="password"
+                  required
+                  placeholder="Min 6 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  leftIcon={<Lock className="w-4 h-4" />}
+                />
+
+                <Input
+                  label="Confirm Password"
+                  type="password"
+                  required
+                  placeholder="Re-enter password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  leftIcon={<Lock className="w-4 h-4" />}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Select
+                  label="Gender"
+                  options={[
+                    { value: "MALE", label: "Male" },
+                    { value: "FEMALE", label: "Female" },
+                    { value: "OTHER", label: "Other" },
+                    { value: "PREFER_NOT_TO_SAY", label: "Prefer not to say" },
+                  ]}
+                  placeholder="Select Gender"
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value as Gender)}
+                />
+
+                <Input
+                  label="Postal PIN Code"
+                  placeholder="e.g. 110001"
+                  value={pincode}
+                  onChange={(e) => setPincode(e.target.value)}
+                  leftIcon={<MapPin className="w-4 h-4" />}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="Residential Address"
+                  placeholder="House/Street/Locality"
+                  value={addressLine1}
+                  onChange={(e) => setAddressLine1(e.target.value)}
+                />
+
+                <Input
+                  label="Occupation / Trade"
+                  placeholder="e.g. Farmer / Student / Engineer"
+                  value={occupation}
+                  onChange={(e) => setOccupation(e.target.value)}
+                />
+              </div>
+
+              {/* Citizen Declaration Checkbox */}
+              <div className="pt-2">
+                <label className="flex items-start gap-2.5 text-xs text-slate-600 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={agreeTerms}
+                    onChange={(e) => setAgreeTerms(e.target.checked)}
+                    className="mt-0.5 rounded border-slate-300 text-blue-700 focus:ring-blue-500 w-4 h-4"
+                  />
+                  <span>
+                    I declare that all details provided are accurate and I agree to the platform's{" "}
+                    <a href="#" className="font-semibold text-blue-700 underline">
+                      Terms of Service
+                    </a>{" "}
+                    and grievance submission guidelines.
+                  </span>
+                </label>
+              </div>
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                isLoading={isLoading}
+                className="w-full font-bold shadow-md"
+                rightIcon={<ArrowRight className="w-4 h-4" />}
+              >
+                Create Citizen Account
+              </Button>
+            </form>
+          </CardContent>
+
+          <CardFooter className="justify-center border-t border-slate-100 py-4 bg-slate-50/50">
+            <p className="text-xs text-slate-500">
+              Already have an account?{" "}
+              <Link to="/login" className="font-bold text-blue-700 hover:underline">
+                Sign in here
+              </Link>
+            </p>
+          </CardFooter>
+        </Card>
       </div>
-
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg flex items-center space-x-2">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
-          <input
-            type="text"
-            required
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            placeholder="Yamini Sharma"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            placeholder="citizen@domain.com"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Mobile Phone (Optional)</label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            placeholder="+91 9876543210"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-          <input
-            type="password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            placeholder="Minimum 6 characters"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm transition flex items-center justify-center space-x-2 disabled:opacity-50"
-        >
-          {loading ? (
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-          ) : (
-            <>
-              <UserPlus className="w-4 h-4" />
-              <span>Register Account</span>
-            </>
-          )}
-        </button>
-      </form>
-
-      <p className="text-center text-sm text-slate-500">
-        Already registered?{" "}
-        <Link to="/login" className="font-semibold text-blue-600 hover:underline">
-          Sign In
-        </Link>
-      </p>
     </div>
   );
 };
+
+export default RegisterPage;

@@ -1,4 +1,5 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
+import { ApiResponse } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
 
@@ -7,9 +8,10 @@ export const axiosClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  timeout: 15000,
 });
 
-// Interceptor to attach JWT token to all requests
+// Request Interceptor: Attach JWT Bearer Token
 axiosClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("setu_auth_token");
@@ -21,17 +23,28 @@ axiosClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Interceptor to handle unauthenticated session expirations
+// Response Interceptor: Normalized Error Handling & Session Expiration
 axiosClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem("setu_auth_token");
-      localStorage.removeItem("setu_user");
-      if (window.location.pathname !== "/login" && window.location.pathname !== "/") {
-        window.location.href = "/login";
+  (error: AxiosError<ApiResponse>) => {
+    if (error.response) {
+      // 401 Unauthorized: Expired or invalid token
+      if (error.response.status === 401) {
+        localStorage.removeItem("setu_auth_token");
+        localStorage.removeItem("setu_user");
+
+        // Only redirect if not already on public authentication routes
+        const currentPath = window.location.pathname;
+        if (
+          currentPath !== "/login" &&
+          currentPath !== "/register" &&
+          currentPath !== "/"
+        ) {
+          window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
+        }
       }
     }
+
     return Promise.reject(error);
   }
 );

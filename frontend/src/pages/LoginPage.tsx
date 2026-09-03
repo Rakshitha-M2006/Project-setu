@@ -1,108 +1,215 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { axiosClient } from "../api/axiosClient";
-import { ShieldCheck, LogIn, AlertCircle } from "lucide-react";
+import { useToast } from "../context/ToastContext";
+import { authApi } from "../api/authApi";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/Card";
+import { Alert } from "../components/ui/Alert";
+import { Landmark, Mail, Lock, ShieldCheck, ArrowRight } from "lucide-react";
 
 export const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { login } = useAuth();
+  const toast = useToast();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  const redirectUrl = searchParams.get("redirect");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    setErrorMsg(null);
+
+    if (!email || !password) {
+      setErrorMsg("Please enter both email and password.");
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
-      const response = await axiosClient.post("/auth/login", { email, password });
-      const { user, token } = response.data.data;
-      login(token, user);
+      const response = await authApi.login({ email, password });
 
-      if (user.role === "CITIZEN") {
-        navigate("/citizen");
-      } else if (user.role === "OFFICER" || user.role === "SENIOR_OFFICER") {
-        navigate("/officer");
-      } else if (user.role === "ADMIN") {
-        navigate("/admin");
+      if (response.success && response.data) {
+        const { token, user } = response.data;
+        login(token, user);
+        toast.success(`Welcome back, ${user.fullName}!`, "Authentication Successful");
+
+        // Role-based redirection
+        if (redirectUrl && redirectUrl.startsWith("/")) {
+          navigate(redirectUrl, { replace: true });
+        } else {
+          switch (user.role) {
+            case "CITIZEN":
+              navigate("/citizen", { replace: true });
+              break;
+            case "OFFICER":
+              navigate("/officer", { replace: true });
+              break;
+            case "SENIOR_OFFICER":
+              navigate("/senior-officer", { replace: true });
+              break;
+            case "ADMIN":
+              navigate("/admin", { replace: true });
+              break;
+            default:
+              navigate("/", { replace: true });
+          }
+        }
       } else {
-        navigate("/");
+        setErrorMsg(response.message || "Login failed. Please check your credentials.");
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to login. Please check your credentials.");
+      const message =
+        err.response?.data?.message || "Invalid email or password. Please verify your credentials.";
+      setErrorMsg(message);
+      toast.error(message, "Sign In Error");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
+  // Quick preset helper for development and hackathon testing
+  const setDemoCredentials = (demoEmail: string, demoPass: string) => {
+    setEmail(demoEmail);
+    setPassword(demoPass);
+    setErrorMsg(null);
+  };
+
   return (
-    <div className="max-w-md mx-auto my-12 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-      <div className="text-center space-y-2">
-        <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mx-auto">
-          <ShieldCheck className="w-6 h-6" />
+    <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-6">
+        {/* Brand Header */}
+        <div className="text-center space-y-2">
+          <div className="w-12 h-12 rounded-2xl bg-blue-700 text-amber-400 flex items-center justify-center mx-auto shadow-md">
+            <Landmark className="w-6 h-6" />
+          </div>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight font-serif">
+            Sign In to SETU
+          </h2>
+          <p className="text-xs text-slate-500">
+            Citizen Grievance & Government Service Redressal Portal
+          </p>
         </div>
-        <h2 className="text-2xl font-bold text-slate-900">Sign in to PROJECT SETU</h2>
-        <p className="text-sm text-slate-500">Citizen & Department Officer Access</p>
+
+        <Card className="border-slate-200 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base">Authentication Portal</CardTitle>
+            <CardDescription>
+              Enter your registered government or citizen email credentials
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            {errorMsg && (
+              <Alert variant="danger" onClose={() => setErrorMsg(null)}>
+                {errorMsg}
+              </Alert>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                label="Email Address"
+                type="email"
+                required
+                placeholder="name@domain.gov.in"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                leftIcon={<Mail className="w-4 h-4" />}
+                autoComplete="email"
+              />
+
+              <Input
+                label="Password"
+                type="password"
+                required
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                leftIcon={<Lock className="w-4 h-4" />}
+                autoComplete="current-password"
+              />
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                isLoading={isLoading}
+                className="w-full font-bold shadow-md"
+                rightIcon={<ArrowRight className="w-4 h-4" />}
+              >
+                Sign In
+              </Button>
+            </form>
+
+            {/* Quick Demo Credentials Toolbar for Testing / Hackathon */}
+            <div className="pt-4 border-t border-slate-100 space-y-2">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                Demo Accounts Quick-Fill:
+              </p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setDemoCredentials("rajesh.kumar@example.com", "Password@123")}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-slate-700 text-left transition"
+                >
+                  <p className="font-bold text-[11px] text-blue-900">👤 Citizen</p>
+                  <p className="text-[10px] text-slate-400">rajesh.kumar</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDemoCredentials("officer.water@setu.gov.in", "Password@123")}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-slate-700 text-left transition"
+                >
+                  <p className="font-bold text-[11px] text-blue-900">👮 Field Officer</p>
+                  <p className="text-[10px] text-slate-400">officer.water</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDemoCredentials("hod.water@setu.gov.in", "Password@123")}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-slate-700 text-left transition"
+                >
+                  <p className="font-bold text-[11px] text-indigo-900">🏛️ Senior Officer</p>
+                  <p className="text-[10px] text-slate-400">hod.water</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDemoCredentials("admin@setu.gov.in", "Admin@Setu2026")}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-slate-700 text-left transition"
+                >
+                  <p className="font-bold text-[11px] text-purple-900">👑 Super Admin</p>
+                  <p className="text-[10px] text-slate-400">admin@setu.gov.in</p>
+                </button>
+              </div>
+            </div>
+          </CardContent>
+
+          <CardFooter className="justify-center border-t border-slate-100 py-4 bg-slate-50/50">
+            <p className="text-xs text-slate-500">
+              Don't have a citizen account?{" "}
+              <Link to="/register" className="font-bold text-blue-700 hover:underline">
+                Register here
+              </Link>
+            </p>
+          </CardFooter>
+        </Card>
+
+        <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400">
+          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          <span>Secured with 256-bit TLS encryption & JWT session validation</span>
+        </div>
       </div>
-
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg flex items-center space-x-2">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            placeholder="citizen@example.com"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            placeholder="••••••••"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm transition flex items-center justify-center space-x-2 disabled:opacity-50"
-        >
-          {loading ? (
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-          ) : (
-            <>
-              <LogIn className="w-4 h-4" />
-              <span>Sign In</span>
-            </>
-          )}
-        </button>
-      </form>
-
-      <p className="text-center text-sm text-slate-500">
-        Don't have an account?{" "}
-        <Link to="/register" className="font-semibold text-blue-600 hover:underline">
-          Register here
-        </Link>
-      </p>
     </div>
   );
 };
+
+export default LoginPage;

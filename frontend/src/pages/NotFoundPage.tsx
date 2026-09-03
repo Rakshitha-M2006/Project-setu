@@ -1,22 +1,34 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Home } from "lucide-react";
+import { Button } from "../components/ui/Button";
+import { HelpCircle, Home } from "lucide-react";
 
 export const NotFoundPage: React.FC = () => {
   return (
-    <div className="min-h-[50vh] flex flex-col items-center justify-center text-center space-y-4">
-      <h1 className="text-6xl font-black text-slate-300">404</h1>
-      <h2 className="text-2xl font-bold text-slate-800">Page Not Found</h2>
-      <p className="text-sm text-slate-500 max-w-sm">
-        The requested portal endpoint or grievance page does not exist.
-      </p>
-      <Link
-        to="/"
-        className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition"
-      >
-        <Home className="w-4 h-4" />
-        <span>Return Home</span>
-      </Link>
+    <div className="min-h-[70vh] flex items-center justify-center p-6">
+      <div className="max-w-md w-full text-center space-y-6 bg-white p-8 rounded-2xl border border-slate-200 shadow-xl">
+        <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center mx-auto">
+          <HelpCircle className="w-8 h-8" />
+        </div>
+
+        <div className="space-y-2">
+          <h1 className="text-3xl font-black text-slate-900 font-serif">404</h1>
+          <h2 className="text-base font-bold text-slate-800">Page Not Found</h2>
+          <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+            The requested government portal resource or route does not exist or has been relocated.
+          </p>
+        </div>
+
+        <div className="pt-4 flex justify-center">
+          <Link to="/">
+            <Button variant="primary" size="md" leftIcon={<Home className="w-4 h-4" />}>
+              Back to Safety (Home)
+            </Button>
+          </Link>
+        </div>
+      </div>
     </div>
   );
 };
+
+export default NotFoundPage;
