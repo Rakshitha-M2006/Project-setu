@@ -60,7 +60,10 @@ export const NewGrievancePage: React.FC = () => {
     id: string;
     trackingNumber: string;
     title: string;
+    category?: string;
     departmentName?: string;
+    priority?: string;
+    status?: string;
     createdAt: string;
   } | null>(null);
 
@@ -200,7 +203,10 @@ export const NewGrievancePage: React.FC = () => {
           id: created.id,
           trackingNumber: response.data.trackingNumber || created.trackingNumber,
           title: created.title,
-          departmentName: created.department?.name || selectedDept?.name || "General Administration",
+          category: response.data.category || created.category?.name || "General Public Grievance",
+          departmentName: response.data.department || created.department?.name || "General Administration",
+          priority: response.data.priority || created.priority || "MEDIUM",
+          status: response.data.status || created.status || "OFFICER_PENDING",
           createdAt: created.createdAt,
         });
         toast.success(
@@ -234,7 +240,7 @@ export const NewGrievancePage: React.FC = () => {
               Grievance Successfully Registered!
             </h2>
             <p className="text-xs sm:text-sm text-emerald-100 max-w-md mx-auto">
-              Your complaint has been entered into the government redressal registry with immutable audit logs.
+              Your complaint has been automatically routed to the responsible department with resolution tracking.
             </p>
           </div>
 
@@ -261,11 +267,16 @@ export const NewGrievancePage: React.FC = () => {
               </p>
             </div>
 
-            {/* Grievance Summary Information */}
+            {/* Grievance Summary Information for Citizen */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
                 <span className="text-slate-400 block text-[10px] uppercase font-bold">Subject</span>
                 <p className="font-bold text-slate-900 line-clamp-2">{submittedGrievance.title}</p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">Category</span>
+                <p className="font-bold text-slate-900 line-clamp-1">{submittedGrievance.category}</p>
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
@@ -274,16 +285,10 @@ export const NewGrievancePage: React.FC = () => {
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Current Status</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">Assigned Priority</span>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold text-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                  SUBMITTED
+                  {submittedGrievance.priority}
                 </span>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Estimated Turnaround SLA</span>
-                <p className="font-bold text-emerald-700">48 Working Hours</p>
               </div>
             </div>
 

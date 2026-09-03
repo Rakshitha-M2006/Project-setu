@@ -46,9 +46,16 @@ export const CitizenGrievancesPage: React.FC = () => {
       // 1. Status Filter Tab
       let matchesTab = true;
       if (activeTab === "PENDING") {
-        matchesTab = g.status === "SUBMITTED" || g.status === "AI_TRIAGED";
+        matchesTab =
+          g.status === "SUBMITTED" ||
+          g.status === "AI_CLASSIFIED" ||
+          g.status === "AI_REVIEW_REQUIRED" ||
+          g.status === "NEEDS_REVIEW" ||
+          g.status === "AI_TRIAGED";
       } else if (activeTab === "IN_PROGRESS") {
         matchesTab =
+          g.status === "DEPARTMENT_ASSIGNED" ||
+          g.status === "OFFICER_PENDING" ||
           g.status === "ASSIGNED" ||
           g.status === "IN_PROGRESS" ||
           g.status === "UNDER_INSPECTION";
@@ -75,10 +82,19 @@ export const CitizenGrievancesPage: React.FC = () => {
   const getStatusCount = (statusType: string) => {
     if (statusType === "ALL") return grievances.length;
     if (statusType === "PENDING")
-      return grievances.filter((g) => g.status === "SUBMITTED" || g.status === "AI_TRIAGED").length;
+      return grievances.filter(
+        (g) =>
+          g.status === "SUBMITTED" ||
+          g.status === "AI_CLASSIFIED" ||
+          g.status === "AI_REVIEW_REQUIRED" ||
+          g.status === "NEEDS_REVIEW" ||
+          g.status === "AI_TRIAGED"
+      ).length;
     if (statusType === "IN_PROGRESS")
       return grievances.filter(
         (g) =>
+          g.status === "DEPARTMENT_ASSIGNED" ||
+          g.status === "OFFICER_PENDING" ||
           g.status === "ASSIGNED" ||
           g.status === "IN_PROGRESS" ||
           g.status === "UNDER_INSPECTION"

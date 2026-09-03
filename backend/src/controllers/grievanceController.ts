@@ -4,8 +4,7 @@ import { prisma } from "../config/database";
 import { env } from "../config/env";
 import { ApiResponse } from "../utils/apiResponse";
 import { ApiError } from "../utils/apiError";
-import { logger } from "../utils/logger";
-import { AiServiceClient } from "../services/aiServiceClient";
+import { GrievanceWorkflowService } from "../services/grievanceWorkflowService";
 import { AuthenticatedRequest } from "../types";
 import { Priority, GrievanceStatus, NotificationType, StorageProvider } from "@prisma/client";
 
@@ -47,6 +46,11 @@ export const updateStatusSchema = z.object({
   body: z.object({
     status: z.enum([
       "SUBMITTED",
+      "AI_CLASSIFIED",
+      "DEPARTMENT_ASSIGNED",
+      "OFFICER_PENDING",
+      "AI_REVIEW_REQUIRED",
+      "NEEDS_REVIEW",
       "AI_TRIAGED",
       "ASSIGNED",
       "IN_PROGRESS",
@@ -82,7 +86,8 @@ const getDepartmentPrefix = (deptCode?: string | null): string => {
 export class GrievanceController {
   /**
    * POST /api/v1/grievances
-   * Submit a new citizen grievance with AI classification, reference ID, and audit trail
+   * Complete grievance submission workflow with AI classification, automatic department routing,
+   * status lifecycle management, and citizen notification.
    */
   async submitGrievance(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -103,59 +108,39 @@ export class GrievanceController {
         attachments,
       } = req.body;
 
-      // 1. Dispatch to Python FastAPI AI Classification Service (with safe failover fallback)
-      const aiAnalysis = await AiServiceClient.analyzeGrievance(
+      // 1. Classify Grievance via AI Microservice
+      const aiAnalysis = await GrievanceWorkflowService.classifyGrievance(
         title,
         description,
         addressText || locality,
         pincode
       );
 
-      // 2. Resolve department from citizen selection or AI recommendation
-      let targetDeptId = departmentId || null;
-      let targetCatId = categoryId || null;
-      let deptCode = aiAnalysis.department_code || "GEN";
+      // 2. Perform Automatic Department Routing Decision
+      const routingDecision = await GrievanceWorkflowService.routeGrievance(
+        aiAnalysis,
+        departmentId,
+        categoryId
+      );
 
-      if (targetCatId && !targetDeptId) {
-        const cat = await prisma.grievanceCategory.findUnique({
-          where: { id: targetCatId },
-          include: { department: true },
-        });
-        if (cat) {
-          targetDeptId = cat.departmentId;
-          deptCode = cat.department.code;
-        }
-      } else if (targetDeptId) {
-        const dept = await prisma.department.findUnique({
-          where: { id: targetDeptId },
-        });
-        if (dept) {
-          deptCode = dept.code;
-        }
-      } else if (!targetDeptId && !aiAnalysis.requires_human_review && aiAnalysis.department_code) {
-        // AI Auto-Routing allowed if confidence >= threshold (0.85)
-        const matchedDept = await prisma.department.findFirst({
-          where: {
-            OR: [
-              { code: aiAnalysis.department_code },
-              { code: { contains: aiAnalysis.department_code } },
-              { name: { contains: aiAnalysis.department } },
-            ],
-          },
-        });
-        if (matchedDept) {
-          targetDeptId = matchedDept.id;
-          deptCode = matchedDept.code;
-        }
-      }
+      // 3. Calculate Final Priority and SLA Turnaround
+      const priorityAndSla = GrievanceWorkflowService.calculatePriority(aiAnalysis);
 
-      // 3. Generate human-readable reference number (e.g. SETU-2026-ELC-001245)
-      const prefix = getDepartmentPrefix(deptCode);
+      // 4. Generate Human-Readable Reference Token (e.g. SETU-2026-ELC-001245)
+      const prefix = getDepartmentPrefix(routingDecision.departmentCode);
       const currentYear = new Date().getFullYear();
       const randomSeq = String(Math.floor(100000 + Math.random() * 900000));
       const trackingNumber = `SETU-${currentYear}-${prefix}-${randomSeq}`;
 
-      // 4. Resolve or create Location entity if coordinates or address provided
+      // 5. Build Status Lifecycle History Entries
+      const statusHistoryEntries = GrievanceWorkflowService.getLifecycleHistoryEntries(
+        citizenId,
+        routingDecision,
+        aiAnalysis,
+        priorityAndSla
+      );
+
+      // 6. Resolve or create Location entity if coordinates or address provided
       let locationId: string | null = null;
       if (latitude || longitude || pincode || district || state) {
         const newLocation = await prisma.location.create({
@@ -171,66 +156,54 @@ export class GrievanceController {
         locationId = newLocation.id;
       }
 
-      // 5. Determine Initial Status and Remarks based on Confidence Threshold
-      const isAutoTriaged = !aiAnalysis.requires_human_review && aiAnalysis.confidence_score >= env.AI_CONFIDENCE_THRESHOLD;
-      const initialStatus = isAutoTriaged ? GrievanceStatus.AI_TRIAGED : GrievanceStatus.SUBMITTED;
-      const priorityValue = (aiAnalysis.priority as Priority) || Priority.MEDIUM;
-
-      const initialRemark = isAutoTriaged
-        ? `Grievance triaged automatically by AI to '${aiAnalysis.department}' with ${priorityValue} priority (Confidence: ${(aiAnalysis.confidence_score * 100).toFixed(1)}%).`
-        : `Grievance registered. AI confidence (${(aiAnalysis.confidence_score * 100).toFixed(1)}%) < ${(env.AI_CONFIDENCE_THRESHOLD * 100).toFixed(0)}% threshold — Flagged for manual human officer review.`;
-
-      // 6. SLA Calculation (default 48h or AI suggested)
-      const slaHours = aiAnalysis.estimated_sla_hours || 48;
-      const slaDeadline = new Date(Date.now() + slaHours * 60 * 60 * 1000);
-
       const finalDescription = additionalDetails
         ? `${description}\n\n[Additional Details]: ${additionalDetails}`
         : description;
 
-      // 7. Atomic MySQL Persistence
+      // 7. Atomic Database Transaction
       const grievance = await prisma.$transaction(async (tx) => {
         const created = await tx.grievance.create({
           data: {
             trackingNumber,
             citizenId,
-            departmentId: targetDeptId,
-            categoryId: targetCatId,
+            departmentId: routingDecision.departmentId,
+            categoryId: routingDecision.categoryId,
             locationId,
             title: title.trim(),
             description: finalDescription.trim(),
             addressText: addressText ? addressText.trim() : null,
             pincode: pincode && pincode.trim() ? pincode.trim() : null,
-            status: initialStatus,
-            priority: priorityValue,
-            isUrgent: aiAnalysis.is_urgent,
-            slaDeadline,
+            status: routingDecision.targetStatus,
+            priority: priorityAndSla.priority,
+            isUrgent: priorityAndSla.isUrgent,
+            slaDeadline: priorityAndSla.slaDeadline,
             aiClassification: {
               create: {
-                predictedDepartmentId: targetDeptId,
+                predictedDepartmentId: routingDecision.departmentId,
                 predictedDepartmentCode: aiAnalysis.department_code,
                 confidenceScore: aiAnalysis.confidence_score,
-                priorityScore: priorityValue,
+                priorityScore: priorityAndSla.priority,
                 detectedSentiment: aiAnalysis.sentiment,
                 extractedKeywords: aiAnalysis.extracted_keywords,
-                suggestedSlaHours: slaHours,
+                suggestedSlaHours: priorityAndSla.slaHours,
                 modelVersion: aiAnalysis.model_version || "1.0.0-nlp-rules",
                 rawInference: {
                   summary: aiAnalysis.summary,
                   issue_type: aiAnalysis.issue_type,
-                  requires_human_review: aiAnalysis.requires_human_review,
+                  can_auto_route: routingDecision.canAutoRoute,
+                  routing_reason: routingDecision.routingReason,
                   confidence_threshold: env.AI_CONFIDENCE_THRESHOLD,
                 },
               },
             },
             statusHistories: {
-              create: {
-                actorId: citizenId,
-                actionTaken: isAutoTriaged ? "GRIEVANCE_AI_TRIAGED" : "GRIEVANCE_SUBMITTED",
-                previousStatus: null,
-                newStatus: initialStatus,
-                remarks: initialRemark,
-              },
+              create: statusHistoryEntries.map((entry) => ({
+                actorId: entry.actorId,
+                actionTaken: entry.actionTaken,
+                previousStatus: entry.previousStatus,
+                newStatus: entry.newStatus,
+                remarks: entry.remarks,
+              })),
             },
             attachments: attachments && attachments.length > 0
               ? {
@@ -252,17 +225,19 @@ export class GrievanceController {
             location: true,
             aiClassification: true,
             attachments: true,
-            statusHistories: true,
+            statusHistories: {
+              orderBy: { createdAt: "asc" },
+            },
           },
         });
 
-        // 8. Create In-App Notification for Citizen
+        // 8. Create Notification for Citizen
         await tx.notification.create({
           data: {
             recipientId: citizenId,
             type: NotificationType.GRIEVANCE_STATUS_UPDATE,
             title: `Grievance Lodged: ${trackingNumber}`,
-            message: `Your grievance '${title}' has been registered under reference ${trackingNumber}. Priority: ${priorityValue}, Target SLA: ${slaHours} hrs.`,
+            message: `Your grievance '${title}' has been registered under reference ${trackingNumber}. Routed to: ${routingDecision.departmentName}, Priority: ${priorityAndSla.priority}, Target SLA: ${priorityAndSla.slaHours} hrs.`,
             linkUrl: `/citizen/grievances/${created.id}`,
           },
         });
@@ -270,14 +245,20 @@ export class GrievanceController {
         return created;
       });
 
+      // 9. Return structured, sanitized payload for the citizen UI
       ApiResponse.created(
         res,
         {
           grievance,
           trackingNumber: grievance.trackingNumber,
-          aiAnalysis,
+          category: grievance.category?.name || aiAnalysis.category,
+          department: grievance.department?.name || routingDecision.departmentName,
+          priority: grievance.priority,
+          status: grievance.status,
+          slaDeadline: grievance.slaDeadline,
+          requiresHumanReview: routingDecision.requiresHumanReview,
         },
-        "Grievance submitted and triaged successfully"
+        "Grievance submitted and routed successfully"
       );
     } catch (error) {
       next(error);

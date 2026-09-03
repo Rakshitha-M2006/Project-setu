@@ -63,10 +63,18 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       case "SUBMITTED":
       case "DRAFT":
         return "bg-slate-100 text-slate-700 border-slate-200";
+      case "AI_CLASSIFIED":
       case "AI_TRIAGED":
         return "bg-purple-100 text-purple-800 border-purple-200";
+      case "DEPARTMENT_ASSIGNED":
+        return "bg-indigo-100 text-indigo-800 border-indigo-200 font-medium";
+      case "OFFICER_PENDING":
+        return "bg-sky-100 text-sky-800 border-sky-200 font-medium";
+      case "AI_REVIEW_REQUIRED":
+      case "NEEDS_REVIEW":
+        return "bg-amber-100 text-amber-900 border-amber-300 font-bold";
       case "ASSIGNED":
-        return "bg-sky-100 text-sky-800 border-sky-200";
+        return "bg-blue-100 text-blue-800 border-blue-200";
       case "IN_PROGRESS":
       case "UNDER_REVIEW":
       case "DOCUMENT_VERIFICATION":

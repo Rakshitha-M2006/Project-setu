@@ -9,6 +9,11 @@ export interface ApiResponse<T = any> {
 
 export type GrievanceStatus =
   | "SUBMITTED"
+  | "AI_CLASSIFIED"
+  | "DEPARTMENT_ASSIGNED"
+  | "OFFICER_PENDING"
+  | "AI_REVIEW_REQUIRED"
+  | "NEEDS_REVIEW"
   | "AI_TRIAGED"
   | "ASSIGNED"
   | "IN_PROGRESS"

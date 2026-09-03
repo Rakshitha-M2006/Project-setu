@@ -183,11 +183,30 @@ export const citizenApi = {
   /**
    * Submit a new grievance (POST /api/v1/grievances)
    */
-  submitGrievance: async (payload: SubmitGrievancePayload): Promise<ApiResponse<{ grievance: GrievanceItem; trackingNumber: string }>> => {
-    const response = await axiosClient.post<ApiResponse<{ grievance: GrievanceItem; trackingNumber: string }>>(
-      "/grievances",
-      payload
-    );
+  submitGrievance: async (
+    payload: SubmitGrievancePayload
+  ): Promise<
+    ApiResponse<{
+      grievance: GrievanceItem;
+      trackingNumber: string;
+      category?: string;
+      department?: string;
+      priority?: Priority;
+      status?: GrievanceStatus;
+      slaDeadline?: string;
+    }>
+  > => {
+    const response = await axiosClient.post<
+      ApiResponse<{
+        grievance: GrievanceItem;
+        trackingNumber: string;
+        category?: string;
+        department?: string;
+        priority?: Priority;
+        status?: GrievanceStatus;
+        slaDeadline?: string;
+      }>
+    >("/grievances", payload);
     return response.data;
   },
 
