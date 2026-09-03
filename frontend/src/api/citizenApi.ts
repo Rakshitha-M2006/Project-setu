@@ -110,10 +110,22 @@ export interface ServiceItem {
   isActive: boolean;
 }
 
+export interface ServiceDocumentItem {
+  id: string;
+  documentType: string;
+  fileName: string;
+  originalName: string;
+  fileUrl: string;
+  mimeType: string;
+  fileSizeBytes: number;
+  isVerified?: boolean;
+}
+
 export interface ServiceApplicationItem {
   id: string;
   applicationNumber: string;
   citizenId: string;
+  citizen?: { id: string; fullName: string; email: string; phone?: string | null };
   serviceId: string;
   service: ServiceItem;
   departmentId: string;
@@ -122,6 +134,7 @@ export interface ServiceApplicationItem {
   formData: any;
   officerRemarks?: string | null;
   reviewingOfficer?: { id: string; fullName: string; email: string } | null;
+  documents?: ServiceDocumentItem[];
   submittedAt: string;
   completedAt?: string | null;
 }
@@ -232,17 +245,36 @@ export const citizenApi = {
   /**
    * Fetch available government services catalog
    */
-  getServices: async (): Promise<ApiResponse<ServiceItem[]>> => {
-    const response = await axiosClient.get<ApiResponse<ServiceItem[]>>("/services");
+  getServices: async (params?: { departmentId?: string; search?: string }): Promise<ApiResponse<ServiceItem[]>> => {
+    const response = await axiosClient.get<ApiResponse<ServiceItem[]>>("/services", { params });
+    return response.data;
+  },
+
+  /**
+   * Fetch specific government service details by ID or code
+   */
+  getServiceById: async (id: string): Promise<ApiResponse<ServiceItem>> => {
+    const response = await axiosClient.get<ApiResponse<ServiceItem>>(`/services/${id}`);
     return response.data;
   },
 
   /**
    * Fetch citizen's submitted service applications
    */
-  getMyApplications: async (): Promise<ApiResponse<ServiceApplicationItem[]>> => {
+  getMyApplications: async (params?: { status?: string }): Promise<ApiResponse<ServiceApplicationItem[]>> => {
     const response = await axiosClient.get<ApiResponse<ServiceApplicationItem[]>>(
-      "/services/my/applications"
+      "/services/my/applications",
+      { params }
+    );
+    return response.data;
+  },
+
+  /**
+   * Fetch specific service application details by ID or applicationNumber
+   */
+  getApplicationById: async (id: string): Promise<ApiResponse<ServiceApplicationItem>> => {
+    const response = await axiosClient.get<ApiResponse<ServiceApplicationItem>>(
+      `/services/applications/${id}`
     );
     return response.data;
   },
@@ -250,11 +282,38 @@ export const citizenApi = {
   /**
    * Apply for a government service
    */
-  applyForService: async (serviceId: string, formData: any): Promise<ApiResponse<ServiceApplicationItem>> => {
-    const response = await axiosClient.post<ApiResponse<ServiceApplicationItem>>(
-      `/services/${serviceId}/apply`,
-      { formData }
-    );
+  applyForService: async (
+    serviceId: string,
+    payload: {
+      formData: any;
+      isDraft?: boolean;
+      documents?: Array<{
+        documentType: string;
+        fileName: string;
+        originalName: string;
+        fileUrl: string;
+        mimeType: string;
+        fileSizeBytes: number;
+      }>;
+    }
+  ): Promise<
+    ApiResponse<{
+      application: ServiceApplicationItem;
+      applicationNumber: string;
+      serviceName: string;
+      departmentName: string;
+      estimatedDays: number;
+    }>
+  > => {
+    const response = await axiosClient.post<
+      ApiResponse<{
+        application: ServiceApplicationItem;
+        applicationNumber: string;
+        serviceName: string;
+        departmentName: string;
+        estimatedDays: number;
+      }>
+    >(`/services/${serviceId}/apply`, payload);
     return response.data;
   },
 

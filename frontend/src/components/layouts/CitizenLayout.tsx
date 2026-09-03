@@ -9,6 +9,7 @@ import {
   FilePlus,
   ListOrdered,
   Briefcase,
+  FileCheck2,
   User,
   Bell,
   HelpCircle,
@@ -23,7 +24,8 @@ export const CitizenLayout: React.FC = () => {
     { label: "Overview", path: "/citizen/dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
     { label: "My Grievances", path: "/citizen/grievances", icon: <ListOrdered className="w-4 h-4" /> },
     { label: "Lodge New Issue", path: "/citizen/grievances/new", icon: <FilePlus className="w-4 h-4" /> },
-    { label: "Public Services", path: "/citizen/applications", icon: <Briefcase className="w-4 h-4" /> },
+    { label: "Apply Services", path: "/citizen/services", icon: <Briefcase className="w-4 h-4" /> },
+    { label: "My Applications", path: "/citizen/applications", icon: <FileCheck2 className="w-4 h-4" /> },
     { label: "Notifications", path: "/citizen/notifications", icon: <Bell className="w-4 h-4" /> },
     { label: "Citizen Profile", path: "/citizen/profile", icon: <User className="w-4 h-4" /> },
   ];

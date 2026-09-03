@@ -27,6 +27,10 @@ import CitizenGrievancesPage from "./pages/citizen/CitizenGrievancesPage";
 import GrievanceDetailPage from "./pages/citizen/GrievanceDetailPage";
 import NewGrievancePage from "./pages/citizen/NewGrievancePage";
 import CitizenApplicationsPage from "./pages/citizen/CitizenApplicationsPage";
+import ApplicationDetailPage from "./pages/citizen/ApplicationDetailPage";
+import ServicesCatalogPage from "./pages/citizen/ServicesCatalogPage";
+import ServiceDetailPage from "./pages/citizen/ServiceDetailPage";
+import ApplyServicePage from "./pages/citizen/ApplyServicePage";
 import CitizenNotificationsPage from "./pages/citizen/CitizenNotificationsPage";
 
 // Officer Portal Pages
@@ -68,7 +72,11 @@ export const App: React.FC = () => {
               <Route path="/citizen/grievances" element={<CitizenGrievancesPage />} />
               <Route path="/citizen/grievances/new" element={<NewGrievancePage />} />
               <Route path="/citizen/grievances/:id" element={<GrievanceDetailPage />} />
+              <Route path="/citizen/services" element={<ServicesCatalogPage />} />
+              <Route path="/citizen/services/:id" element={<ServiceDetailPage />} />
+              <Route path="/citizen/services/:id/apply" element={<ApplyServicePage />} />
               <Route path="/citizen/applications" element={<CitizenApplicationsPage />} />
+              <Route path="/citizen/applications/:id" element={<ApplicationDetailPage />} />
               <Route path="/citizen/notifications" element={<CitizenNotificationsPage />} />
             </Route>
 
