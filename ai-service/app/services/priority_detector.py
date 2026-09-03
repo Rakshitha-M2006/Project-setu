@@ -14,7 +14,8 @@ class PriorityDetector:
     HIGH_KEYWORDS = {
         "overflow", "hospital", "patient", "dengue", "accident", "broken wire",
         "no water", "blackout", "outage", "urgent", "hazard", "deep pothole",
-        "power cut", "powercut", "no electricity", "waterlogging", "stench", "cholera"
+        "power cut", "powercut", "no electricity", "waterlogging", "stench", "cholera",
+        "sewage", "dirty water", "smelly", "leaking"
     }
 
     MEDIUM_KEYWORDS = {
