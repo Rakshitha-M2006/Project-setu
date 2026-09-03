@@ -1,4 +1,4 @@
-# PROJECT SETU - SIH 2026 Workflow & SLA Escalation Matrix
+# PROJECT SETU - Operational Workflow & SLA Escalation Matrix
 
 ## 1. Grievance Lifecycle State Machine
 

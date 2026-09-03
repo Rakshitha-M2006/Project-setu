@@ -1,6 +1,4 @@
-# 🏛️ PROJECT SETU — PostgreSQL Database Architecture & Schema Specification
-
-> **Smart India Hackathon 2026** | **Engine:** PostgreSQL 14+ Relational Engine | **ORM:** Prisma ORM 5.x | **Language:** TypeScript
+> **PROJECT SETU** | **Engine:** PostgreSQL 14+ Relational Engine | **ORM:** Prisma ORM 5.x | **Language:** TypeScript
 
 ---
 
@@ -122,7 +120,7 @@ erDiagram
 | `detectedSentiment` | `TEXT` | `NOT NULL` | `FRUSTRATED_CRITICAL`, `DISSATISFIED`, `NEUTRAL`, `SATISFIED` |
 | `extractedKeywords` | `JSONB` | `NULLABLE` | Array of extracted tokens |
 | `suggestedSlaHours` | `INTEGER` | `NOT NULL` | Suggested turnaround window |
-| `modelVersion` | `TEXT` | `DEFAULT '1.0.0-sih'` | Version of NLP model used |
+| `modelVersion` | `TEXT` | `DEFAULT '1.0.0'` | Version of NLP model used |
 | `rawInference` | `JSONB` | `NULLABLE` | Complete inference payload |
 
 ### 7. `grievance_status_histories` (Immutable Audit Trail)

@@ -1,6 +1,6 @@
 # 🏛️ PROJECT SETU (सेतु)
-### *Enterprise AI-Powered Citizen Grievance Redressal & Public Service Delivery Platform*
-**Smart India Hackathon 2026 • AI-GovTech Flagship Platform**
+### *AI-Powered Government Services & Grievance Management Platform*
+**National Digital Public Infrastructure (DPI) Flagship Platform**
 
 ---
 
@@ -203,4 +203,4 @@ pm2 start ecosystem.config.js --env production
 ---
 
 ## 📜 License
-Developed for the **Smart India Hackathon 2026**. All rights reserved.
+PROJECT SETU • Enterprise Public Digital Infrastructure. All rights reserved.

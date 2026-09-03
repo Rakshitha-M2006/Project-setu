@@ -1,7 +1,6 @@
 -- ==============================================================================
--- Migration: 20260902000000_init_database
--- Description: Initialize PROJECT SETU Relational Schema in MySQL 8.0+
--- Smart India Hackathon 2026
+-- PROJECT SETU - Database Initialization Schema
+-- AI-Powered Government Services & Grievance Management Platform
 -- ==============================================================================
 
 -- CreateTable users
@@ -187,7 +186,7 @@ CREATE TABLE `ai_classifications` (
     `suggestedSlaHours` INTEGER NOT NULL,
     `isSpamOrGibberish` BOOLEAN NOT NULL DEFAULT false,
     `isDuplicate` BOOLEAN NOT NULL DEFAULT false,
-    `modelVersion` VARCHAR(191) NOT NULL DEFAULT '1.0.0-sih',
+    `modelVersion` VARCHAR(191) NOT NULL DEFAULT '1.0.0',
     `rawInference` JSON NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 

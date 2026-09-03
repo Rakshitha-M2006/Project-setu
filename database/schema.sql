@@ -1,7 +1,6 @@
 -- ==============================================================================
--- PROJECT SETU - MySQL Relational Schema Reference
--- Smart India Hackathon 2026
--- Database Engine: MySQL 8.0+ / InnoDB / utf8mb4
+-- PROJECT SETU - Relational Schema Reference
+-- AI-Powered Government Services & Grievance Management Platform
 -- ==============================================================================
 
 CREATE DATABASE IF NOT EXISTS `project_setu_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

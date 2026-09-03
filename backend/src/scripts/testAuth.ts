@@ -36,12 +36,21 @@ userRepository.findByEmail = async (email: string) => {
 };
 
 userRepository.findByPhone = async (phone: string) => {
+  const cleanPhone = phone.trim();
   for (const u of mockUserDb.values()) {
-    if (u.phone === phone) {
+    if (u.phone === cleanPhone || (u.phone && cleanPhone.endsWith(u.phone.replace("+91", "")))) {
       return u;
     }
   }
   return null;
+};
+
+userRepository.findByIdentifier = async (identifier: string) => {
+  const trimmed = identifier.trim();
+  if (trimmed.includes("@")) {
+    return userRepository.findByEmail(trimmed);
+  }
+  return userRepository.findByPhone(trimmed);
 };
 
 userRepository.findById = async (id: string) => {
@@ -162,16 +171,16 @@ async function runAuthTestSuite() {
   try {
     const timestamp = Date.now();
     const testCitizenEmail = `test.citizen.${timestamp}@setu.gov.in`;
-    const testCitizenPhone = `+9198${Math.floor(10000000 + Math.random() * 90000000)}`;
+    const testCitizenPhone = `98${Math.floor(10000000 + Math.random() * 90000000)}`;
     const testCitizenPassword = "SecurePassword@2026";
 
     // -------------------------------------------------------------------------
     // TEST 1: Unit Test - Password Hashing & JWT Token Generation
     // -------------------------------------------------------------------------
     console.log("📦 1. Unit Level: Cryptographic Hashing & JWT Verification");
-    const hash = await authService.hashPassword("MySecretPass");
-    const isMatch = await authService.comparePassword("MySecretPass", hash);
-    const isBadMatch = await authService.comparePassword("WrongPass", hash);
+    const hash = await authService.hashPassword("MySecretPass123");
+    const isMatch = await authService.comparePassword("MySecretPass123", hash);
+    const isBadMatch = await authService.comparePassword("WrongPass999", hash);
     assert(isMatch === true, "Password hashing produces verifiable bcrypt hash");
     assert(isBadMatch === false, "Incorrect password fails bcrypt comparison");
 
@@ -186,20 +195,23 @@ async function runAuthTestSuite() {
     assert(decoded.id === "usr-test-unit" && decoded.role === Role.CITIZEN, "JWT token signs and verifies correctly");
 
     // -------------------------------------------------------------------------
-    // TEST 2: Valid Citizen Registration
+    // TEST 2: Valid Citizen Registration with all 11 compulsory fields
     // -------------------------------------------------------------------------
     console.log("\n📦 2. Integration: Citizen Registration (POST /api/v1/auth/register)");
     const regRes = await makeRequest(server, {
       method: "POST",
       path: "/api/v1/auth/register",
       body: {
-        email: testCitizenEmail,
-        password: testCitizenPassword,
         fullName: "Aarav Sharma",
+        email: testCitizenEmail,
         phone: testCitizenPhone,
-        pincode: "110060",
-        addressLine1: "123 Civic Lane",
+        password: testCitizenPassword,
+        dateOfBirth: "1995-05-12",
         gender: "MALE",
+        addressLine1: "123 Civic Lane, Sector 4",
+        city: "New Delhi",
+        state: "Delhi NCT",
+        pincode: "110001",
       },
     });
 
@@ -220,10 +232,16 @@ async function runAuthTestSuite() {
       method: "POST",
       path: "/api/v1/auth/register",
       body: {
-        email: testCitizenEmail, // Duplicate
-        password: "AnotherPassword@123",
         fullName: "Imposter User",
-        phone: "+919999999999",
+        email: testCitizenEmail, // Duplicate
+        phone: "9876543299",
+        password: "AnotherPassword@123",
+        dateOfBirth: "1990-01-01",
+        gender: "FEMALE",
+        addressLine1: "456 Imposter Road",
+        city: "Mumbai",
+        state: "Maharashtra",
+        pincode: "400001",
       },
     });
 
@@ -238,27 +256,34 @@ async function runAuthTestSuite() {
       method: "POST",
       path: "/api/v1/auth/register",
       body: {
-        email: `unique.email.${timestamp}@setu.gov.in`,
-        password: "AnotherPassword@123",
         fullName: "Duplicate Phone User",
+        email: `unique.email.${timestamp}@setu.gov.in`,
         phone: testCitizenPhone, // Duplicate phone
+        password: "AnotherPassword@123",
+        dateOfBirth: "1992-02-02",
+        gender: "OTHER",
+        addressLine1: "789 Other Road",
+        city: "Bengaluru",
+        state: "Karnataka",
+        pincode: "560001",
       },
     });
 
     assert(dupPhoneRes.statusCode === 409, "Duplicate phone registration returns 409 Conflict", `Got ${dupPhoneRes.statusCode}`);
 
     // -------------------------------------------------------------------------
-    // TEST 5: Input Validation (Zod Schema)
+    // TEST 5: Input Validation (Missing compulsory fields / Invalid formats)
     // -------------------------------------------------------------------------
-    console.log("\n📦 5. Input Validation: Malformed / Short Passwords / Invalid Pincode");
+    console.log("\n📦 5. Input Validation: Missing Compulsory Fields & Short Passwords");
     const invalidInputRes = await makeRequest(server, {
       method: "POST",
       path: "/api/v1/auth/register",
       body: {
         email: "not-an-email",
-        password: "123", // Too short (< 6)
+        password: "123", // Too short
         fullName: "",
-        pincode: "999", // Invalid PIN code
+        phone: "12345", // Invalid phone
+        pincode: "000000", // Invalid PIN code
       },
     });
 
@@ -266,21 +291,35 @@ async function runAuthTestSuite() {
     assert(Array.isArray(invalidInputRes.body.errors), "Validation errors array returned in response");
 
     // -------------------------------------------------------------------------
-    // TEST 6: Valid Login
+    // TEST 6: Valid Login (By Email & By Mobile Number)
     // -------------------------------------------------------------------------
-    console.log("\n📦 6. Authentication: Valid Login (POST /api/v1/auth/login)");
-    const loginRes = await makeRequest(server, {
+    console.log("\n📦 6. Authentication: Login by Email & by Mobile Number");
+    // 6.1 By Email
+    const loginEmailRes = await makeRequest(server, {
       method: "POST",
       path: "/api/v1/auth/login",
       body: {
-        email: testCitizenEmail,
+        identifier: testCitizenEmail,
         password: testCitizenPassword,
       },
     });
 
-    assert(loginRes.statusCode === 200, "Valid login returns 200 OK", `Got ${loginRes.statusCode}`);
-    assert(typeof loginRes.body.data.token === "string", "Valid login returns JWT access token");
-    assert(loginRes.body.data.user.role === Role.CITIZEN, "Logged in user has CITIZEN role");
+    assert(loginEmailRes.statusCode === 200, "Valid login by Email returns 200 OK", `Got ${loginEmailRes.statusCode}`);
+    assert(typeof loginEmailRes.body.data.token === "string", "Email login returns JWT access token");
+    assert(loginEmailRes.body.data.user.role === Role.CITIZEN, "Logged in user has CITIZEN role");
+
+    // 6.2 By Mobile Number
+    const loginPhoneRes = await makeRequest(server, {
+      method: "POST",
+      path: "/api/v1/auth/login",
+      body: {
+        identifier: testCitizenPhone,
+        password: testCitizenPassword,
+      },
+    });
+
+    assert(loginPhoneRes.statusCode === 200, "Valid login by Mobile Number returns 200 OK", `Got ${loginPhoneRes.statusCode}`);
+    assert(typeof loginPhoneRes.body.data.token === "string", "Mobile login returns JWT access token");
 
     // -------------------------------------------------------------------------
     // TEST 7: Invalid Login (Bad Password / Unknown User)
@@ -290,7 +329,7 @@ async function runAuthTestSuite() {
       method: "POST",
       path: "/api/v1/auth/login",
       body: {
-        email: testCitizenEmail,
+        identifier: testCitizenEmail,
         password: "WrongPassword@999",
       },
     });
@@ -300,7 +339,7 @@ async function runAuthTestSuite() {
       method: "POST",
       path: "/api/v1/auth/login",
       body: {
-        email: "ghost.user@setu.gov.in",
+        identifier: "ghost.user@setu.gov.in",
         password: "SomePassword@123",
       },
     });
@@ -396,7 +435,7 @@ async function runAuthTestSuite() {
     });
     assert(offOnOff.statusCode === 200, "Officer can access Officer route (200 OK)");
 
-    // 9.5 Senior Officer accessing Officer area -> Allowed (requireAnyRole: OFFICER, SENIOR_OFFICER)
+    // 9.5 Senior Officer accessing Officer area -> Allowed
     const senOnOff = await makeRequest(server, {
       method: "GET",
       path: "/api/v1/test/rbac/officer-only",

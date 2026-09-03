@@ -1,6 +1,6 @@
 // ==============================================================================
 // PROJECT SETU - Enterprise Relational Database Schema (PostgreSQL 14+)
-// Smart India Hackathon 2026
+// AI-Powered Government Services & Grievance Management Platform
 // Engine: PostgreSQL Relational Engine | Encoding: UTF8
 // ==============================================================================
 
@@ -336,7 +336,7 @@ model AIClassification {
   suggestedSlaHours      Int
   isSpamOrGibberish      Boolean            @default(false)
   isDuplicate            Boolean            @default(false)
-  modelVersion           String             @default("1.0.0-sih")
+  modelVersion           String             @default("1.0.0")
   rawInference           Json?
   createdAt              DateTime           @default(now())
 

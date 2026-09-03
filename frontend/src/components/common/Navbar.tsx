@@ -41,7 +41,7 @@ export const Navbar: React.FC = () => {
                 PROJECT SETU
               </span>
               <span className="block text-[10px] tracking-wider text-slate-400 font-medium uppercase">
-                SIH 2026 AI Redressal Platform
+                AI-Powered Government Services & Grievance Management Platform
               </span>
             </div>
           </Link>

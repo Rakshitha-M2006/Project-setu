@@ -1,7 +1,7 @@
 export const APP_METADATA = {
   NAME: "PROJECT SETU Backend REST API",
   VERSION: "1.0.0",
-  DESCRIPTION: "AI-Powered Citizen Grievance & Government Service Delivery Platform (SIH 2026)",
+  DESCRIPTION: "AI-Powered Government Services & Grievance Management Platform",
   AUTHOR: "PROJECT SETU Engineering Team",
 } as const;
 

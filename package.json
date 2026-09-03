@@ -1,7 +1,7 @@
 {
   "name": "project-setu",
   "version": "1.0.0",
-  "description": "PROJECT SETU - AI-Powered Citizen Grievance & Public Service Management Platform (Smart India Hackathon 2026)",
+  "description": "PROJECT SETU - AI-Powered Government Services & Grievance Management Platform",
   "private": true,
   "scripts": {
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install && cd ..",
@@ -27,7 +27,6 @@
   },
   "keywords": [
     "govtech",
-    "smart-india-hackathon",
     "grievance-redressal",
     "public-services",
     "ai-nlp",
@@ -35,9 +34,9 @@
     "nodejs",
     "express",
     "fastapi",
-    "mysql",
+    "postgresql",
     "prisma"
   ],
-  "author": "PROJECT SETU Team - SIH 2026",
+  "author": "PROJECT SETU Engineering Team",
   "license": "UNLICENSED"
 }

@@ -1,5 +1,5 @@
 # 🏛️ PROJECT SETU — Master Production Deployment Manual
-### Smart India Hackathon 2026 • AI-Powered Citizen Grievance Redressal & Public Service Delivery Platform
+### AI-Powered Government Services & Grievance Management Platform
 
 ---
 
@@ -132,7 +132,7 @@ ENVIRONMENT=production
 PORT=8000
 HOST=0.0.0.0
 PROJECT_NAME=PROJECT SETU AI NLP Microservice
-MODEL_VERSION=1.0.0-sih
+MODEL_VERSION=1.0.0
 CONFIDENCE_THRESHOLD=0.85
 INTERNAL_API_SECRET=setu_internal_microservice_secret_key_2026
 ALLOWED_ORIGINS=http://localhost:5000,http://127.0.0.1:5000

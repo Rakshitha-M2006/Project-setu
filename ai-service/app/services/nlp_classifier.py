@@ -4,7 +4,7 @@ from typing import List, Tuple, Dict, Any
 class NLPClassifier:
     """
     Lightweight rule-based and semantic NLP tokenization engine for
-    Smart India Hackathon 2026 grievance classification.
+    PROJECT SETU citizen grievance classification.
     Can be replaced or augmented with transformer embeddings (e.g., IndicBERT / RoBERTa).
     """
 

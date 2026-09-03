@@ -1,6 +1,6 @@
 /**
  * PROJECT SETU - PostgreSQL Database Seed Script
- * Smart India Hackathon 2026
+ * AI-Powered Government Services & Grievance Management Platform
  * 
  * Clean separation of:
  * 1. Master Production Data (Departments, Grievance Categories, Government Services)

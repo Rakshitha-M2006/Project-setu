@@ -1,6 +1,6 @@
 -- ==============================================================================
--- PROJECT SETU - Initial Seed Data Script (MySQL)
--- Smart India Hackathon 2026
+-- PROJECT SETU - Initial Seed Data Script
+-- AI-Powered Government Services & Grievance Management Platform
 -- ==============================================================================
 
 USE `project_setu_db`;

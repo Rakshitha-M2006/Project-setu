@@ -16,7 +16,7 @@ def verify_internal_api_key(api_key: str = Security(API_KEY_HEADER)):
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description="AI and NLP microservice powering Smart India Hackathon 2026 - PROJECT SETU",
+    description="AI and NLP microservice powering PROJECT SETU - Government Services & Grievance Management Platform",
     version=settings.MODEL_VERSION,
     docs_url="/docs" if settings.ENVIRONMENT != "production" else None,
     redoc_url="/redoc" if settings.ENVIRONMENT != "production" else None,

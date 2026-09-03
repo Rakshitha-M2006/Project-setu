@@ -85,18 +85,23 @@ export interface AuthResponseData {
 }
 
 export interface RegisterCitizenPayload {
-  email: string;
-  password: string;
   fullName: string;
-  phone?: string | null;
-  gender?: Gender | null;
-  addressLine1?: string | null;
+  email: string;
+  phone: string;
+  password: string;
+  dateOfBirth: string;
+  gender: Gender;
+  addressLine1: string;
+  city: string;
+  state: string;
+  pincode: string;
   addressLine2?: string | null;
-  pincode?: string | null;
   occupation?: string | null;
+  emergencyContact?: string | null;
 }
 
 export interface LoginPayload {
-  email: string;
+  identifier?: string;
+  email?: string;
   password: string;
 }

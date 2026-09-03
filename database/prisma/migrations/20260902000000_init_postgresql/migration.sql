@@ -1,6 +1,5 @@
--- ==============================================================================
 -- PROJECT SETU - PostgreSQL Migration Script (20260902000000_init_postgresql)
--- Smart India Hackathon 2026
+-- AI-Powered Government Services & Grievance Management Platform
 -- Target Engine: PostgreSQL 14+ Relational Engine
 -- ==============================================================================
 
@@ -162,7 +161,7 @@ CREATE TABLE "ai_classifications" (
     "suggestedSlaHours" INTEGER NOT NULL,
     "isSpamOrGibberish" BOOLEAN NOT NULL DEFAULT false,
     "isDuplicate" BOOLEAN NOT NULL DEFAULT false,
-    "modelVersion" TEXT NOT NULL DEFAULT '1.0.0-sih',
+    "modelVersion" TEXT NOT NULL DEFAULT '1.0.0',
     "rawInference" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 

@@ -55,10 +55,7 @@ export const Header: React.FC = () => {
           <span className="hidden md:inline text-slate-400">Ministry of Electronics & Information Technology</span>
         </div>
         <div className="flex items-center gap-4 text-slate-300">
-          <span className="hidden sm:inline bg-blue-950 text-blue-300 px-2 py-0.5 rounded border border-blue-800/60 font-medium">
-            SIH 2026
-          </span>
-          <span>Toll-Free: 1800-11-7388</span>
+          <span>National Grievance Helpline: 1800-11-7388</span>
         </div>
       </div>
 

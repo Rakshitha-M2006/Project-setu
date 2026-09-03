@@ -46,13 +46,13 @@ export const Footer: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">
-              An AI-driven citizen grievance redressal and public service delivery ecosystem built for the
-              Smart India Hackathon 2026. Empowering citizens through real-time NLP classification, strict SLA
-              enforcement, and automated escalation pipelines.
+              An enterprise AI-driven citizen grievance redressal and public service delivery ecosystem.
+              Empowering citizens through real-time NLP classification, strict SLA enforcement, and automated
+              escalation pipelines.
             </p>
             <div className="pt-2 flex items-center gap-2 text-[11px] text-amber-400 font-medium">
               <Shield className="w-3.5 h-3.5" />
-              <span>Certified SIH 2026 GovTech Architecture</span>
+              <span>National Digital Public Infrastructure Architecture</span>
             </div>
           </div>
 
@@ -119,7 +119,7 @@ export const Footer: React.FC = () => {
 
         {/* 3. Bottom Copyright & Disclaimer */}
         <div className="mt-12 pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© 2026 PROJECT SETU. Designed and Developed for Smart India Hackathon 2026.</p>
+          <p>© 2026 PROJECT SETU. All Rights Reserved. Government Services & Grievance Management Platform.</p>
           <div className="flex items-center gap-6 text-[11px]">
             <a href="#" className="hover:text-slate-300 transition">
               Terms of Service

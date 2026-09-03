@@ -1,7 +1,7 @@
 {
   "name": "project-setu-database",
   "version": "1.0.0",
-  "description": "Enterprise PostgreSQL Database Architecture for PROJECT SETU (SIH 2026)",
+  "description": "Enterprise PostgreSQL Database Architecture for PROJECT SETU",
   "main": "index.js",
   "scripts": {
     "prisma:validate": "prisma validate",

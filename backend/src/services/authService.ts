@@ -5,7 +5,7 @@ import { env } from "../config/env";
 import { ApiError } from "../utils/apiError";
 import { JwtUserPayload } from "../types";
 import { RegisterCitizenInput, LoginInput } from "../validators/authValidator";
-import { User, Role } from "@prisma/client";
+import { Role } from "@prisma/client";
 
 export class AuthService {
   private readonly saltRounds = 10;
@@ -80,18 +80,16 @@ export class AuthService {
       throw ApiError.conflict("An account with this email address already exists.");
     }
 
-    // 2. Check for duplicate mobile number if provided
-    if (input.phone) {
-      const existingPhone = await userRepository.findByPhone(input.phone);
-      if (existingPhone) {
-        throw ApiError.conflict("An account with this mobile number already exists.");
-      }
+    // 2. Check for duplicate mobile number
+    const existingPhone = await userRepository.findByPhone(input.phone);
+    if (existingPhone) {
+      throw ApiError.conflict("An account with this mobile number already exists.");
     }
 
     // 3. Hash password securely
     const passwordHash = await this.hashPassword(input.password);
 
-    // 4. Create user and citizen profile in transaction
+    // 4. Create user and citizen profile in transaction (role forced to CITIZEN)
     const newUser = await userRepository.createCitizen({
       ...input,
       passwordHash,
@@ -114,12 +112,18 @@ export class AuthService {
 
   /**
    * Authenticates user credentials and issues access token
+   * Supports both Email and Mobile Number login
    */
   async login(input: LoginInput) {
-    // 1. Find user by email
-    const user = await userRepository.findByEmail(input.email);
+    const rawIdentifier = input.identifier || input.email;
+    if (!rawIdentifier) {
+      throw ApiError.badRequest("Email or mobile number is required.");
+    }
+
+    // 1. Find user by email or mobile number
+    const user = await userRepository.findByIdentifier(rawIdentifier);
     if (!user) {
-      throw ApiError.unauthorized("Invalid email or password.");
+      throw ApiError.unauthorized("Invalid email/mobile number or password.");
     }
 
     // 2. Verify account is active
@@ -130,7 +134,7 @@ export class AuthService {
     // 3. Verify password
     const isPasswordValid = await this.comparePassword(input.password, user.passwordHash);
     if (!isPasswordValid) {
-      throw ApiError.unauthorized("Invalid email or password.");
+      throw ApiError.unauthorized("Invalid email/mobile number or password.");
     }
 
     // 4. Update last login timestamp asynchronously

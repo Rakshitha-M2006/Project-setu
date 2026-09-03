@@ -13,10 +13,10 @@ export const LandingPage: React.FC = () => {
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]" />
 
         <div className="relative max-w-5xl mx-auto text-center space-y-8">
-          {/* SIH 2026 Pill Badge */}
+          {/* Platform Pill Badge */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-900/60 border border-blue-500/30 text-blue-300 text-xs font-semibold backdrop-blur-sm shadow-inner">
             <Award className="w-4 h-4 text-amber-400" />
-            <span>Smart India Hackathon 2026 • AI-GovTech Flagship</span>
+            <span>National Digital Public Infrastructure (DPI) • AI-GovTech Flagship</span>
           </div>
 
           {/* Main Title */}
