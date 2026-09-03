@@ -10,6 +10,7 @@ import {
   ListOrdered,
   Briefcase,
   User,
+  Bell,
   HelpCircle,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
@@ -19,10 +20,11 @@ export const CitizenLayout: React.FC = () => {
   const location = useLocation();
 
   const navItems = [
-    { label: "Overview", path: "/citizen", icon: <LayoutDashboard className="w-4 h-4" /> },
+    { label: "Overview", path: "/citizen/dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
     { label: "My Grievances", path: "/citizen/grievances", icon: <ListOrdered className="w-4 h-4" /> },
-    { label: "Lodge New Complaint", path: "/citizen/grievances/new", icon: <FilePlus className="w-4 h-4" /> },
-    { label: "Service Applications", path: "/citizen/services", icon: <Briefcase className="w-4 h-4" /> },
+    { label: "Lodge New Issue", path: "/citizen/grievances/new", icon: <FilePlus className="w-4 h-4" /> },
+    { label: "Public Services", path: "/citizen/applications", icon: <Briefcase className="w-4 h-4" /> },
+    { label: "Notifications", path: "/citizen/notifications", icon: <Bell className="w-4 h-4" /> },
     { label: "Citizen Profile", path: "/citizen/profile", icon: <User className="w-4 h-4" /> },
   ];
 
@@ -58,7 +60,9 @@ export const CitizenLayout: React.FC = () => {
                 Citizen Menu
               </p>
               {navItems.map((item) => {
-                const isActive = location.pathname === item.path;
+                const isActive =
+                  location.pathname === item.path ||
+                  (item.path === "/citizen/dashboard" && location.pathname === "/citizen");
                 return (
                   <Link
                     key={item.path}
@@ -66,7 +70,7 @@ export const CitizenLayout: React.FC = () => {
                     className={cn(
                       "flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition",
                       isActive
-                        ? "bg-blue-700 text-white shadow-sm"
+                        ? "bg-blue-700 text-white shadow-sm font-bold"
                         : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                     )}
                   >

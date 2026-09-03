@@ -20,8 +20,15 @@ import RegisterPage from "./pages/RegisterPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
-// Dashboards
-import CitizenDashboard from "./pages/dashboards/CitizenDashboard";
+// Citizen Portal Pages
+import CitizenDashboardPage from "./pages/citizen/CitizenDashboardPage";
+import CitizenProfilePage from "./pages/citizen/CitizenProfilePage";
+import CitizenGrievancesPage from "./pages/citizen/CitizenGrievancesPage";
+import NewGrievancePage from "./pages/citizen/NewGrievancePage";
+import CitizenApplicationsPage from "./pages/citizen/CitizenApplicationsPage";
+import CitizenNotificationsPage from "./pages/citizen/CitizenNotificationsPage";
+
+// Other Role Dashboards
 import OfficerDashboard from "./pages/dashboards/OfficerDashboard";
 import SeniorOfficerDashboard from "./pages/dashboards/SeniorOfficerDashboard";
 import AdminDashboard from "./pages/dashboards/AdminDashboard";
@@ -49,11 +56,13 @@ export const App: React.FC = () => {
                 </ProtectedRoute>
               }
             >
-              <Route path="/citizen" element={<CitizenDashboard />} />
-              <Route path="/citizen/grievances" element={<CitizenDashboard />} />
-              <Route path="/citizen/grievances/new" element={<CitizenDashboard />} />
-              <Route path="/citizen/services" element={<CitizenDashboard />} />
-              <Route path="/citizen/profile" element={<CitizenDashboard />} />
+              <Route path="/citizen" element={<CitizenDashboardPage />} />
+              <Route path="/citizen/dashboard" element={<CitizenDashboardPage />} />
+              <Route path="/citizen/profile" element={<CitizenProfilePage />} />
+              <Route path="/citizen/grievances" element={<CitizenGrievancesPage />} />
+              <Route path="/citizen/grievances/new" element={<NewGrievancePage />} />
+              <Route path="/citizen/applications" element={<CitizenApplicationsPage />} />
+              <Route path="/citizen/notifications" element={<CitizenNotificationsPage />} />
             </Route>
 
             {/* 3. Protected Field Officer Routes (OfficerLayout) */}
