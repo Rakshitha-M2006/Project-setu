@@ -29,8 +29,13 @@ import NewGrievancePage from "./pages/citizen/NewGrievancePage";
 import CitizenApplicationsPage from "./pages/citizen/CitizenApplicationsPage";
 import CitizenNotificationsPage from "./pages/citizen/CitizenNotificationsPage";
 
+// Officer Portal Pages
+import OfficerDashboardPage from "./pages/officer/OfficerDashboardPage";
+import OfficerGrievancesPage from "./pages/officer/OfficerGrievancesPage";
+import OfficerGrievanceDetailPage from "./pages/officer/OfficerGrievanceDetailPage";
+import OfficerProfilePage from "./pages/officer/OfficerProfilePage";
+
 // Other Role Dashboards
-import OfficerDashboard from "./pages/dashboards/OfficerDashboard";
 import SeniorOfficerDashboard from "./pages/dashboards/SeniorOfficerDashboard";
 import AdminDashboard from "./pages/dashboards/AdminDashboard";
 
@@ -70,16 +75,16 @@ export const App: React.FC = () => {
             {/* 3. Protected Field Officer Routes (OfficerLayout) */}
             <Route
               element={
-                <ProtectedRoute allowedRoles={["OFFICER", "SENIOR_OFFICER"]}>
+                <ProtectedRoute allowedRoles={["OFFICER", "SENIOR_OFFICER", "ADMIN"]}>
                   <OfficerLayout />
                 </ProtectedRoute>
               }
             >
-              <Route path="/officer" element={<OfficerDashboard />} />
-              <Route path="/officer/in-progress" element={<OfficerDashboard />} />
-              <Route path="/officer/sla-warnings" element={<OfficerDashboard />} />
-              <Route path="/officer/resolved" element={<OfficerDashboard />} />
-              <Route path="/officer/services" element={<OfficerDashboard />} />
+              <Route path="/officer" element={<OfficerDashboardPage />} />
+              <Route path="/officer/dashboard" element={<OfficerDashboardPage />} />
+              <Route path="/officer/grievances" element={<OfficerGrievancesPage />} />
+              <Route path="/officer/grievances/:id" element={<OfficerGrievanceDetailPage />} />
+              <Route path="/officer/profile" element={<OfficerProfilePage />} />
             </Route>
 
             {/* 4. Protected Senior Officer / HOD Routes (SeniorOfficerLayout) */}

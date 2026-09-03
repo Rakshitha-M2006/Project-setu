@@ -7,9 +7,7 @@ import { useAuth } from "../../context/AuthContext";
 import {
   Inbox,
   Clock,
-  CheckCircle2,
   AlertTriangle,
-  FileCheck2,
   Shield,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
@@ -19,11 +17,9 @@ export const OfficerLayout: React.FC = () => {
   const location = useLocation();
 
   const navItems = [
-    { label: "Officer Queue", path: "/officer", icon: <Inbox className="w-4 h-4" /> },
-    { label: "In-Progress Work", path: "/officer/in-progress", icon: <Clock className="w-4 h-4" /> },
-    { label: "SLA Warning Tasks", path: "/officer/sla-warnings", icon: <AlertTriangle className="w-4 h-4" /> },
-    { label: "Resolved Grievances", path: "/officer/resolved", icon: <CheckCircle2 className="w-4 h-4" /> },
-    { label: "Service Verifications", path: "/officer/services", icon: <FileCheck2 className="w-4 h-4" /> },
+    { label: "Officer Dashboard", path: "/officer/dashboard", icon: <Inbox className="w-4 h-4" /> },
+    { label: "Grievances Queue", path: "/officer/grievances", icon: <Clock className="w-4 h-4" /> },
+    { label: "My Profile & Duty", path: "/officer/profile", icon: <Shield className="w-4 h-4" /> },
   ];
 
   return (

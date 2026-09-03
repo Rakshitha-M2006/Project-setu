@@ -57,6 +57,17 @@ export interface GrievanceItem {
   category?: { id: string; name: string; code?: string | null } | null;
   location?: GrievanceLocationItem | null;
   attachments?: GrievanceAttachmentItem[];
+  assignments?: Array<{
+    id: string;
+    officerProfileId?: string;
+    officerProfile?: {
+      id?: string;
+      designation?: string;
+      badgeNumber?: string | null;
+      user?: { id?: string; email?: string; fullName?: string };
+    };
+    isActive: boolean;
+  }>;
   statusHistories?: GrievanceStatusHistoryItem[];
   citizen?: { id: string; fullName: string; email: string; phone?: string | null };
 }

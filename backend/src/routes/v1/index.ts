@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import healthRoutes from "./healthRoutes";
 import authRoutes from "./authRoutes";
 import citizenRoutes from "./citizenRoutes";
+import officerRoutes from "./officerRoutes";
 import grievanceRoutes from "./grievanceRoutes";
 import serviceRoutes from "./serviceRoutes";
 import notificationRoutes from "./notificationRoutes";
@@ -20,6 +21,9 @@ router.use("/auth", authRoutes);
 
 // Citizen Portal Endpoints
 router.use("/citizen", citizenRoutes);
+
+// Field Officer Portal Endpoints
+router.use("/officer", officerRoutes);
 
 // Grievances Endpoints
 router.use("/grievances", grievanceRoutes);
