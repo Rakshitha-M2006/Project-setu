@@ -1,0 +1,150 @@
+# ==============================================================================
+# PROJECT SETU - Production Hardened Docker Compose Stack
+# Multi-Tier Architecture: NGINX -> React SPA | Express API | FastAPI NLP | Relational DB
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Relational Database Layer (PostgreSQL 15 / MySQL 8.0)
+  # ----------------------------------------------------------------------------
+  database:
+    image: postgres:15-alpine
+    container_name: setu-db-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - db_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - setu_internal_net
+
+  # ----------------------------------------------------------------------------
+  # 2. AI & NLP Classification Microservice (Python FastAPI)
+  # ----------------------------------------------------------------------------
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: setu-ai-prod
+    restart: always
+    environment:
+      ENVIRONMENT: production
+      PORT: 8000
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
+      ALLOWED_ORIGINS: "http://backend:5000,http://localhost:5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - setu_internal_net
+
+  # ----------------------------------------------------------------------------
+  # 3. Core REST API Backend (Node.js Express + Prisma)
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: setu-backend-prod
+    restart: always
+    depends_on:
+      database:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@database:5432/${DB_NAME}?schema=public&connection_limit=20
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: "7d"
+      AI_SERVICE_URL: http://ai-service:8000
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://setu.gov.in,https://admin.setu.gov.in}
+      LOG_LEVEL: "info"
+    volumes:
+      - uploads_prod_data:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - setu_internal_net
+
+  # ----------------------------------------------------------------------------
+  # 4. Production Web Server & React Frontend (NGINX)
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: "/api/v1"
+    container_name: setu-frontend-prod
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.2'
+          memory: 128M
+    networks:
+      - setu_internal_net
+
+networks:
+  setu_internal_net:
+    driver: bridge
+
+volumes:
+  db_prod_data:
+    driver: local
+  uploads_prod_data:
+    driver: local

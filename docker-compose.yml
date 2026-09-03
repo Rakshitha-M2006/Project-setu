@@ -1,0 +1,94 @@
+# ==============================================================================
+# PROJECT SETU - Local & Development Docker Compose Stack
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  # 1. Database (PostgreSQL 15 / MySQL 8.0)
+  database:
+    image: postgres:15-alpine
+    container_name: setu-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres_secure_2026}
+      POSTGRES_DB: ${DB_NAME:-project_setu}
+    ports:
+      - "5432:5432"
+    volumes:
+      - setu_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-project_setu}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - setu_network
+
+  # 2. AI NLP Microservice (FastAPI + Python)
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: setu-ai-service
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: development
+      PORT: 8000
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:-setu_internal_microservice_secret_key_2026}
+    ports:
+      - "8000:8000"
+    networks:
+      - setu_network
+
+  # 3. Node.js Express REST API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: setu-backend
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      ai-service:
+        condition: service_started
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres_secure_2026}@database:5432/${DB_NAME:-project_setu}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-setu_jwt_super_secret_development_key_change_in_production}
+      AI_SERVICE_URL: http://ai-service:8000
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:-setu_internal_microservice_secret_key_2026}
+      CORS_ORIGIN: "http://localhost:5173,http://localhost:3000,http://localhost:80"
+    ports:
+      - "5000:5000"
+    volumes:
+      - setu_uploads:/app/uploads
+    networks:
+      - setu_network
+
+  # 4. React Frontend (Vite + Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: "/api/v1"
+    container_name: setu-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - setu_network
+
+networks:
+  setu_network:
+    driver: bridge
+
+volumes:
+  setu_pg_data:
+  setu_uploads:
