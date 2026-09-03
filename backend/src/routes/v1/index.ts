@@ -8,6 +8,7 @@ import serviceRoutes from "./serviceRoutes";
 import notificationRoutes from "./notificationRoutes";
 import departmentRoutes from "./departmentRoutes";
 import slaRoutes from "./slaRoutes";
+import uploadRoutes from "./uploadRoutes";
 import { requireAuth, requireRole, requireAnyRole } from "../../middleware/authMiddleware";
 import { ApiResponse } from "../../utils/apiResponse";
 import { Role } from "@prisma/client";
@@ -31,6 +32,9 @@ router.use("/grievances", grievanceRoutes);
 
 // SLA Management & Escalations
 router.use("/sla", slaRoutes);
+
+// Secure Document & Evidence Uploads
+router.use("/uploads", uploadRoutes);
 
 // Public Services Endpoints
 router.use("/services", serviceRoutes);
