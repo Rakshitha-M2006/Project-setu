@@ -29,8 +29,10 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 
   const getStyle = () => {
     // 1. Priority Styles
-    if (type === "priority" || status === "CRITICAL" || status === "HIGH" || status === "MEDIUM" || status === "LOW") {
+    if (type === "priority" || status === "PENDING_AI" || status === "CRITICAL" || status === "HIGH" || status === "MEDIUM" || status === "LOW") {
       switch (status) {
+        case "PENDING_AI":
+          return "bg-purple-50 text-purple-700 border-purple-200 font-medium";
         case "CRITICAL":
           return "bg-rose-100 text-rose-800 border-rose-200 font-bold";
         case "HIGH":

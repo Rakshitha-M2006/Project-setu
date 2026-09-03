@@ -44,6 +44,7 @@ enum GrievanceStatus {
 }
 
 enum Priority {
+  PENDING_AI
   LOW
   MEDIUM
   HIGH
@@ -280,7 +281,7 @@ model Grievance {
   addressText         String?
   pincode             String?
   status              GrievanceStatus          @default(SUBMITTED)
-  priority            Priority                 @default(MEDIUM)
+  priority            Priority                 @default(PENDING_AI)
   isUrgent            Boolean                  @default(false)
   slaDeadline         DateTime?
   slaBreached         Boolean                  @default(false)

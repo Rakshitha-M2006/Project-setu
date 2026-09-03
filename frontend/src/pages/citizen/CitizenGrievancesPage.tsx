@@ -1,28 +1,27 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
 import citizenApi, { GrievanceItem } from "../../api/citizenApi";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, EmptyTableState } from "../../components/ui/Table";
 import { StatusBadge } from "../../components/ui/StatusBadge";
-import { Modal } from "../../components/ui/Modal";
 import { Input } from "../../components/ui/Input";
 import {
   FilePlus,
   Search,
   RefreshCw,
-  Clock,
+  ExternalLink,
 } from "lucide-react";
 
 export const CitizenGrievancesPage: React.FC = () => {
+  const navigate = useNavigate();
   const toast = useToast();
 
   const [grievances, setGrievances] = useState<GrievanceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedGrievance, setSelectedGrievance] = useState<GrievanceItem | null>(null);
 
   const loadGrievances = async () => {
     setIsLoading(true);
@@ -209,7 +208,11 @@ export const CitizenGrievancesPage: React.FC = () => {
                 />
               ) : (
                 filteredGrievances.map((g) => (
-                  <TableRow key={g.id} className="cursor-pointer hover:bg-blue-50/30">
+                  <TableRow
+                    key={g.id}
+                    onClick={() => navigate(`/citizen/grievances/${g.id}`)}
+                    className="cursor-pointer hover:bg-blue-50/40 transition"
+                  >
                     <TableCell className="font-mono font-bold text-blue-700 text-xs">
                       {g.trackingNumber}
                     </TableCell>
@@ -229,14 +232,19 @@ export const CitizenGrievancesPage: React.FC = () => {
                       {new Date(g.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedGrievance(g)}
-                        className="text-xs py-1 px-2.5"
+                      <Link
+                        to={`/citizen/grievances/${g.id}`}
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        Inspect
-                      </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs py-1 px-2.5"
+                          rightIcon={<ExternalLink className="w-3 h-3" />}
+                        >
+                          Track
+                        </Button>
+                      </Link>
                     </TableCell>
                   </TableRow>
                 ))
@@ -245,90 +253,6 @@ export const CitizenGrievancesPage: React.FC = () => {
           </Table>
         </CardContent>
       </Card>
-
-      {/* 4. Grievance Inspection Modal */}
-      {selectedGrievance && (
-        <Modal
-          isOpen={!!selectedGrievance}
-          onClose={() => setSelectedGrievance(null)}
-          title={`Grievance Details: ${selectedGrievance.trackingNumber}`}
-          description={`Filed on ${new Date(selectedGrievance.createdAt).toLocaleString()}`}
-          size="lg"
-        >
-          <div className="space-y-6">
-            {/* Status Header Strip */}
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <StatusBadge status={selectedGrievance.status} size="md" />
-                <StatusBadge status={selectedGrievance.priority} type="priority" size="md" />
-              </div>
-
-              {selectedGrievance.slaDeadline && (
-                <div className="text-xs text-slate-500 flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-amber-600" />
-                  <span>
-                    SLA Deadline: <strong className="text-slate-900">{new Date(selectedGrievance.slaDeadline).toLocaleDateString()}</strong>
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-1">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Complaint Subject</h4>
-              <p className="text-base font-bold text-slate-900">{selectedGrievance.title}</p>
-            </div>
-
-            <div className="space-y-1">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Description</h4>
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
-                {selectedGrievance.description}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                <span className="text-slate-400 block text-[10px] uppercase">Jurisdiction Authority</span>
-                <span className="font-bold text-slate-900 mt-0.5 block">
-                  {selectedGrievance.department?.name || "Pending Triage"}
-                </span>
-              </div>
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                <span className="text-slate-400 block text-[10px] uppercase">Incident Location / PIN</span>
-                <span className="font-bold text-slate-900 mt-0.5 block">
-                  {selectedGrievance.addressText || "Not specified"} ({selectedGrievance.pincode || "N/A"})
-                </span>
-              </div>
-            </div>
-
-            {/* Resolution History / Timeline */}
-            <div className="space-y-3 pt-2">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                Official Redressal Timeline
-              </h4>
-
-              {selectedGrievance.statusHistories && selectedGrievance.statusHistories.length > 0 ? (
-                <div className="space-y-3 pl-2 border-l-2 border-blue-200">
-                  {selectedGrievance.statusHistories.map((h) => (
-                    <div key={h.id} className="relative pl-4 space-y-1">
-                      <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-blue-600 ring-4 ring-white" />
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-xs text-slate-900">{h.actionTaken}</span>
-                        <StatusBadge status={h.newStatus} size="sm" />
-                      </div>
-                      {h.remarks && <p className="text-xs text-slate-600">{h.remarks}</p>}
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        {new Date(h.createdAt).toLocaleString()}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-400 italic">No historical transitions recorded yet.</p>
-              )}
-            </div>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 };

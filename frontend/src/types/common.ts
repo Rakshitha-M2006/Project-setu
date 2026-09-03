@@ -18,7 +18,7 @@ export type GrievanceStatus =
   | "ESCALATED"
   | "REOPENED";
 
-export type Priority = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+export type Priority = "PENDING_AI" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
 export type ApplicationStatus =
   | "DRAFT"

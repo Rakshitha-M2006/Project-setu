@@ -1,9 +1,43 @@
 import axiosClient from "./axiosClient";
 import { ApiResponse, Department, GrievanceStatus, Priority, ApplicationStatus } from "../types";
 
+export interface GrievanceAttachmentItem {
+  id?: string;
+  fileName: string;
+  originalName: string;
+  fileUrl: string;
+  mimeType: string;
+  fileSizeBytes: number;
+  isResolutionEvidence?: boolean;
+  uploadedAt?: string;
+}
+
+export interface GrievanceStatusHistoryItem {
+  id: string;
+  actionTaken: string;
+  previousStatus?: GrievanceStatus | null;
+  newStatus: GrievanceStatus;
+  remarks?: string | null;
+  createdAt: string;
+  actor?: { id: string; fullName: string; role: string } | null;
+}
+
+export interface GrievanceLocationItem {
+  id: string;
+  state: string;
+  district: string;
+  subDistrict?: string | null;
+  blockOrWard?: string | null;
+  locality?: string | null;
+  pincode: string;
+  latitude?: number | null;
+  longitude?: number | null;
+}
+
 export interface GrievanceItem {
   id: string;
   trackingNumber: string;
+  citizenId: string;
   title: string;
   description: string;
   addressText?: string | null;
@@ -12,18 +46,19 @@ export interface GrievanceItem {
   priority: Priority;
   isUrgent: boolean;
   slaDeadline?: string | null;
+  slaBreached?: boolean;
+  isEscalated?: boolean;
+  resolutionSummary?: string | null;
   resolvedAt?: string | null;
+  closedAt?: string | null;
   createdAt: string;
+  updatedAt: string;
   department?: Department | null;
-  category?: { id: string; name: string } | null;
-  statusHistories?: Array<{
-    id: string;
-    actionTaken: string;
-    newStatus: GrievanceStatus;
-    remarks?: string | null;
-    createdAt: string;
-    actor?: { id: string; fullName: string; role: string } | null;
-  }>;
+  category?: { id: string; name: string; code?: string | null } | null;
+  location?: GrievanceLocationItem | null;
+  attachments?: GrievanceAttachmentItem[];
+  statusHistories?: GrievanceStatusHistoryItem[];
+  citizen?: { id: string; fullName: string; email: string; phone?: string | null };
 }
 
 export interface NotificationItem {
@@ -83,10 +118,23 @@ export interface ServiceApplicationItem {
 export interface SubmitGrievancePayload {
   title: string;
   description: string;
-  addressText?: string;
-  pincode?: string;
-  departmentId?: string;
-  locationId?: string;
+  categoryId?: string | null;
+  departmentId?: string | null;
+  addressText?: string | null;
+  pincode?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  locality?: string | null;
+  district?: string | null;
+  state?: string | null;
+  additionalDetails?: string | null;
+  attachments?: Array<{
+    fileName: string;
+    originalName: string;
+    fileUrl: string;
+    mimeType: string;
+    fileSizeBytes: number;
+  }>;
 }
 
 export const citizenApi = {
@@ -117,15 +165,15 @@ export const citizenApi = {
   },
 
   /**
-   * Get all grievances submitted by current citizen
+   * Get all grievances submitted by current citizen (GET /api/v1/grievances/my)
    */
-  getMyGrievances: async (params?: { status?: string; priority?: string }): Promise<ApiResponse<GrievanceItem[]>> => {
-    const response = await axiosClient.get<ApiResponse<GrievanceItem[]>>("/grievances", { params });
+  getMyGrievances: async (params?: { status?: string; priority?: string; search?: string }): Promise<ApiResponse<GrievanceItem[]>> => {
+    const response = await axiosClient.get<ApiResponse<GrievanceItem[]>>("/grievances/my", { params });
     return response.data;
   },
 
   /**
-   * Get grievance details by ID
+   * Get grievance details by ID or trackingNumber (GET /api/v1/grievances/:id)
    */
   getGrievanceById: async (id: string): Promise<ApiResponse<GrievanceItem>> => {
     const response = await axiosClient.get<ApiResponse<GrievanceItem>>(`/grievances/${id}`);
@@ -133,10 +181,10 @@ export const citizenApi = {
   },
 
   /**
-   * Submit a new grievance
+   * Submit a new grievance (POST /api/v1/grievances)
    */
-  submitGrievance: async (payload: SubmitGrievancePayload): Promise<ApiResponse<{ grievance: GrievanceItem }>> => {
-    const response = await axiosClient.post<ApiResponse<{ grievance: GrievanceItem }>>(
+  submitGrievance: async (payload: SubmitGrievancePayload): Promise<ApiResponse<{ grievance: GrievanceItem; trackingNumber: string }>> => {
+    const response = await axiosClient.post<ApiResponse<{ grievance: GrievanceItem; trackingNumber: string }>>(
       "/grievances",
       payload
     );

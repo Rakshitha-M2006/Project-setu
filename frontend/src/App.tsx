@@ -24,6 +24,7 @@ import NotFoundPage from "./pages/NotFoundPage";
 import CitizenDashboardPage from "./pages/citizen/CitizenDashboardPage";
 import CitizenProfilePage from "./pages/citizen/CitizenProfilePage";
 import CitizenGrievancesPage from "./pages/citizen/CitizenGrievancesPage";
+import GrievanceDetailPage from "./pages/citizen/GrievanceDetailPage";
 import NewGrievancePage from "./pages/citizen/NewGrievancePage";
 import CitizenApplicationsPage from "./pages/citizen/CitizenApplicationsPage";
 import CitizenNotificationsPage from "./pages/citizen/CitizenNotificationsPage";
@@ -61,6 +62,7 @@ export const App: React.FC = () => {
               <Route path="/citizen/profile" element={<CitizenProfilePage />} />
               <Route path="/citizen/grievances" element={<CitizenGrievancesPage />} />
               <Route path="/citizen/grievances/new" element={<NewGrievancePage />} />
+              <Route path="/citizen/grievances/:id" element={<GrievanceDetailPage />} />
               <Route path="/citizen/applications" element={<CitizenApplicationsPage />} />
               <Route path="/citizen/notifications" element={<CitizenNotificationsPage />} />
             </Route>

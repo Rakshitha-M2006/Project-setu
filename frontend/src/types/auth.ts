@@ -2,6 +2,17 @@ export type Role = "CITIZEN" | "OFFICER" | "SENIOR_OFFICER" | "ADMIN";
 
 export type Gender = "MALE" | "FEMALE" | "OTHER" | "PREFER_NOT_TO_SAY";
 
+export interface GrievanceCategory {
+  id: string;
+  departmentId: string;
+  name: string;
+  code?: string | null;
+  description?: string | null;
+  defaultPriority?: string;
+  defaultSlaHours?: number;
+  isActive?: boolean;
+}
+
 export interface Department {
   id: string;
   code: string;
@@ -10,6 +21,7 @@ export interface Department {
   defaultSlaHours?: number;
   nodalOfficerName?: string | null;
   nodalOfficerEmail?: string | null;
+  categories?: GrievanceCategory[];
 }
 
 export interface Location {
