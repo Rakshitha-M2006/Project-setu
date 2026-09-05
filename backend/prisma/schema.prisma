@@ -237,6 +237,7 @@ model Department {
   categories          GrievanceCategory[]
   grievances          Grievance[]
   services            GovernmentService[]
+  schemes             GovernmentScheme[]
   serviceApplications ServiceApplication[]
   aiClassifications   AIClassification[]
   anomalies           AnomalyRecord[]
@@ -435,6 +436,7 @@ model GovernmentService {
   id                      String                @id @default(uuid())
   code                    String                @unique
   name                    String
+  category                String?               @default("General Citizen Services")
   departmentId            String
   department              Department            @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   description             String?               @db.Text
@@ -442,6 +444,9 @@ model GovernmentService {
   requiredDocuments       Json?                 // Array of required doc descriptions
   feeAmount               Decimal               @default(0.00) @db.Decimal(10, 2)
   estimatedProcessingDays Int                   @default(7)
+  isExternal              Boolean               @default(false)
+  officialPortalUrl       String?               @db.VarChar(500)
+  applicationType         String                @default("INTERNAL") // "INTERNAL" or "EXTERNAL"
   isActive                Boolean               @default(true)
   createdAt               DateTime              @default(now())
   updatedAt               DateTime              @updatedAt
@@ -450,9 +455,43 @@ model GovernmentService {
   applications            ServiceApplication[]
 
   @@index([code])
+  @@index([category])
   @@index([departmentId])
+  @@index([isExternal])
   @@index([isActive])
   @@map("government_services")
+}
+
+model GovernmentScheme {
+  id                  String      @id @default(uuid())
+  code                String      @unique
+  name                String
+  slug                String      @unique
+  departmentId        String?
+  department          Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  category            String      // e.g. "Agriculture", "Health & Wellness", "Social Welfare", "Education", "Housing", "Business & Finance"
+  shortDescription    String      @db.Text
+  overview            String      @db.Text
+  benefits            Json        // Array of string benefits
+  eligibilityCriteria Json        // Array of eligibility criteria strings
+  eligibilityRules    Json?       // Structured rule criteria for interactive checker (ageMin, ageMax, allowedOccupations, incomeLimit, state, category)
+  requiredDocuments   Json        // Array of required document strings
+  applicationMethod   String      @default("ONLINE") // "ONLINE", "OFFICIAL_PORTAL", "IN_PERSON", "SETU_INTEGRATED"
+  officialPortalUrl   String?     @db.VarChar(500)
+  targetAudience      String?     // "Farmers & Small Landholders", "Women & Children", etc.
+  sponsoringAgency    String?     // e.g. "Ministry of Agriculture & Farmers Welfare, GoI"
+  stateScope          String      @default("ALL_INDIA") // "ALL_INDIA" or specific State/UT
+  isActive            Boolean     @default(true)
+  lastUpdated         DateTime    @default(now())
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@index([code])
+  @@index([slug])
+  @@index([category])
+  @@index([stateScope])
+  @@index([isActive])
+  @@map("government_schemes")
 }
 
 model ServiceApplication {

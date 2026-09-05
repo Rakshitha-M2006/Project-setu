@@ -4,6 +4,7 @@ import Header from "../common/Header";
 import Footer from "../common/Footer";
 import ToastContainer from "../ui/Toast";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   ShieldAlert,
   Building,
@@ -18,19 +19,20 @@ import { cn } from "../../utils/cn";
 
 export const AdminLayout: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const location = useLocation();
 
   const navItems = [
-    { label: "Admin Dashboard", path: "/admin", icon: <ShieldAlert className="w-4 h-4" /> },
-    { label: "Anomaly Surveillance", path: "/admin/anomalies", icon: <Flame className="w-4 h-4 text-rose-400" /> },
-    { label: "User Management", path: "/admin/users", icon: <Users2 className="w-4 h-4" /> },
-    { label: "Officer Staffing", path: "/admin/officers", icon: <Users2 className="w-4 h-4" /> },
-    { label: "Departments Master", path: "/admin/departments", icon: <Building className="w-4 h-4" /> },
-    { label: "Grievances Master", path: "/admin/grievances", icon: <Building className="w-4 h-4" /> },
-    { label: "Public Services", path: "/admin/services", icon: <Building className="w-4 h-4" /> },
-    { label: "Analytics Intelligence", path: "/admin/analytics", icon: <Activity className="w-4 h-4" /> },
-    { label: "Forensic Audit Logs", path: "/admin/audit-logs", icon: <History className="w-4 h-4" /> },
-    { label: "AI Pipeline Monitoring", path: "/admin/ai-monitoring", icon: <Cpu className="w-4 h-4" /> },
+    { label: t("navigation.adminDashboard") || "Admin Dashboard", path: "/admin", icon: <ShieldAlert className="w-4 h-4" /> },
+    { label: t("navigation.anomalies") || "Anomaly Surveillance", path: "/admin/anomalies", icon: <Flame className="w-4 h-4 text-rose-400" /> },
+    { label: t("navigation.userManagement") || "User Management", path: "/admin/users", icon: <Users2 className="w-4 h-4" /> },
+    { label: t("navigation.officers") || "Officers Directory", path: "/admin/officers", icon: <Users2 className="w-4 h-4" /> },
+    { label: t("navigation.departments") || "Departments Master", path: "/admin/departments", icon: <Building className="w-4 h-4" /> },
+    { label: t("navigation.grievances") || "Grievances Master", path: "/admin/grievances", icon: <Building className="w-4 h-4" /> },
+    { label: t("navigation.services") || "Public Services", path: "/admin/services", icon: <Building className="w-4 h-4" /> },
+    { label: t("navigation.analytics") || "Analytics & Reports", path: "/admin/analytics", icon: <Activity className="w-4 h-4" /> },
+    { label: t("navigation.auditLogs") || "Forensic Audit Logs", path: "/admin/audit-logs", icon: <History className="w-4 h-4" /> },
+    { label: t("navigation.aiMonitoring") || "AI Pipeline Monitoring", path: "/admin/ai-monitoring", icon: <Cpu className="w-4 h-4" /> },
   ];
 
   return (
@@ -47,7 +49,7 @@ export const AdminLayout: React.FC = () => {
             <div>
               <p className="text-xs font-bold leading-none">{user?.fullName}</p>
               <p className="text-[11px] text-purple-300 mt-0.5">
-                Super Administrator • Central IT & Governance Cell
+                {t("navigation.adminDashboard") || "Super Administrator"} • Central IT & Governance Cell
               </p>
             </div>
           </div>
@@ -66,10 +68,12 @@ export const AdminLayout: React.FC = () => {
           <aside className="lg:col-span-1 space-y-4">
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-1">
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 pb-2 border-b border-slate-100">
-                Administration
+                {t("navigation.adminDashboard") || "Administration"}
               </p>
               {navItems.map((item) => {
-                const isActive = location.pathname === item.path;
+                const isActive =
+                  location.pathname === item.path ||
+                  (item.path === "/admin" && location.pathname === "/admin/dashboard");
                 return (
                   <Link
                     key={item.path}
@@ -77,7 +81,7 @@ export const AdminLayout: React.FC = () => {
                     className={cn(
                       "flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition",
                       isActive
-                        ? "bg-purple-800 text-white shadow-sm"
+                        ? "bg-purple-800 text-white shadow-sm font-bold"
                         : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                     )}
                   >
@@ -94,7 +98,7 @@ export const AdminLayout: React.FC = () => {
                 <span>Security Governance</span>
               </p>
               <p className="text-purple-800/90 leading-relaxed text-[11px]">
-                All administrative changes, role grants, and master catalog edits are written to immutable audit logs.
+                {t("admin.auditLogsTitle") || "All administrative changes, role grants, and master catalog edits are written to immutable audit logs."}
               </p>
             </div>
           </aside>

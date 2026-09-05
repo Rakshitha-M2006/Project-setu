@@ -4,6 +4,7 @@ import Header from "../common/Header";
 import Footer from "../common/Footer";
 import ToastContainer from "../ui/Toast";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   TrendingUp,
   AlertOctagon,
@@ -16,13 +17,14 @@ import { cn } from "../../utils/cn";
 
 export const SeniorOfficerLayout: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const location = useLocation();
 
   const navItems = [
-    { label: "Executive Overview", path: "/senior-officer", icon: <TrendingUp className="w-4 h-4" /> },
-    { label: "Critical Escalations", path: "/senior-officer/escalations", icon: <AlertOctagon className="w-4 h-4" /> },
-    { label: "Officer Performance", path: "/senior-officer/officers", icon: <Users className="w-4 h-4" /> },
-    { label: "Department Analytics", path: "/senior-officer/analytics", icon: <FileSpreadsheet className="w-4 h-4" /> },
+    { label: t("navigation.overview") || "Executive Overview", path: "/senior-officer", icon: <TrendingUp className="w-4 h-4" /> },
+    { label: t("common.statusEscalated") || "Critical Escalations", path: "/senior-officer/escalations", icon: <AlertOctagon className="w-4 h-4" /> },
+    { label: t("navigation.officers") || "Officer Performance", path: "/senior-officer/officers", icon: <Users className="w-4 h-4" /> },
+    { label: t("navigation.analytics") || "Department Analytics", path: "/senior-officer/analytics", icon: <FileSpreadsheet className="w-4 h-4" /> },
   ];
 
   return (
@@ -45,7 +47,7 @@ export const SeniorOfficerLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4 text-xs">
-            <span className="bg-indigo-900 border border-indigo-800 text-indigo-200 px-2.5 py-1 rounded">
+            <span className="bg-indigo-900 border border-indigo-800 text-indigo-200 px-2.5 py-1 rounded font-mono">
               Jurisdiction: State Nodal Level
             </span>
           </div>
@@ -58,7 +60,7 @@ export const SeniorOfficerLayout: React.FC = () => {
           <aside className="lg:col-span-1 space-y-4">
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-1">
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 pb-2 border-b border-slate-100">
-                Senior Oversight
+                {t("navigation.overview") || "Senior Oversight"}
               </p>
               {navItems.map((item) => {
                 const isActive = location.pathname === item.path;
@@ -69,7 +71,7 @@ export const SeniorOfficerLayout: React.FC = () => {
                     className={cn(
                       "flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition",
                       isActive
-                        ? "bg-indigo-800 text-white shadow-sm"
+                        ? "bg-indigo-800 text-white shadow-sm font-bold"
                         : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                     )}
                   >
@@ -86,8 +88,8 @@ export const SeniorOfficerLayout: React.FC = () => {
                 <span>Executive Authority</span>
               </p>
               <p className="text-indigo-800/90 leading-relaxed text-[11px]">
-                You hold authority to re-assign stalled matters, issue direct inquiries, and override classification
-                tags.
+                {t("home.workflow.step3Desc") ||
+                  "You hold authority to re-assign stalled matters, issue direct inquiries, and override classification tags."}
               </p>
             </div>
           </aside>

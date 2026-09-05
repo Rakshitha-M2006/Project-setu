@@ -96,12 +96,36 @@ export interface CitizenDashboardStats {
   recentNotifications: NotificationItem[];
 }
 
+export interface SchemeItem {
+  id: string;
+  code: string;
+  name: string;
+  slug: string;
+  sponsoringAgency: string;
+  category: string;
+  shortDescription: string;
+  overview: string;
+  benefits: string[];
+  eligibilityCriteria: string[];
+  requiredDocuments: string[];
+  officialPortalUrl: string;
+  applicationMethod: string;
+  tags: string[];
+  isActive: boolean;
+  translations?: Record<string, { name: string; shortDescription: string }>;
+}
+
 export interface ServiceItem {
   id: string;
   code: string;
   name: string;
   departmentId: string;
   department?: Department;
+  category?: string;
+  isExternal?: boolean;
+  applicationType?: "INTERNAL" | "EXTERNAL";
+  officialPortalUrl?: string | null;
+  guidanceInstructions?: string[] | null;
   description?: string | null;
   eligibilityCriteria?: string | null;
   requiredDocuments?: string[] | null;
@@ -159,6 +183,55 @@ export interface SubmitGrievancePayload {
     mimeType: string;
     fileSizeBytes: number;
   }>;
+}
+
+export interface ServiceFieldRequirement {
+  id: string;
+  label: string;
+  type: "text" | "number" | "date" | "select" | "textarea" | "boolean";
+  requirement: "REQUIRED" | "OPTIONAL" | "CONDITIONAL";
+  placeholder?: string;
+  helperText?: string;
+  options?: Array<{ value: string; label: string }>;
+  condition?: {
+    field: string;
+    operator: "equals" | "not_equals" | "truthy" | "greater_than";
+    value: any;
+  };
+  validation?: {
+    min?: number;
+    max?: number;
+    pattern?: string;
+    message?: string;
+  };
+}
+
+export interface ServiceDocumentRequirement {
+  code: string;
+  name: string;
+  description: string;
+  requirement: "REQUIRED" | "OPTIONAL";
+  allowedMimeTypes: string[];
+  maxSizeBytes: number;
+}
+
+export interface ServiceRequirementsSchema {
+  code: string;
+  name: string;
+  departmentCode: string;
+  category: string;
+  description: string;
+  eligibility: string[];
+  estimatedDays: number;
+  feeAmount: number;
+  fields: {
+    personal: ServiceFieldRequirement[];
+    contact: ServiceFieldRequirement[];
+    address: ServiceFieldRequirement[];
+    serviceSpecific: ServiceFieldRequirement[];
+  };
+  documents: ServiceDocumentRequirement[];
+  declarationText: string;
 }
 
 export const citizenApi = {
@@ -245,8 +318,16 @@ export const citizenApi = {
   /**
    * Fetch available government services catalog
    */
-  getServices: async (params?: { departmentId?: string; search?: string }): Promise<ApiResponse<ServiceItem[]>> => {
+  getServices: async (params?: { departmentId?: string; search?: string; category?: string }): Promise<ApiResponse<ServiceItem[]>> => {
     const response = await axiosClient.get<ApiResponse<ServiceItem[]>>("/services", { params });
+    return response.data;
+  },
+
+  /**
+   * Fetch quick starter actions for SETU Assistant
+   */
+  getAssistantQuickActions: async (): Promise<ApiResponse<any>> => {
+    const response = await axiosClient.get<ApiResponse<any>>("/assistant/quick-actions");
     return response.data;
   },
 
@@ -255,6 +336,16 @@ export const citizenApi = {
    */
   getServiceById: async (id: string): Promise<ApiResponse<ServiceItem>> => {
     const response = await axiosClient.get<ApiResponse<ServiceItem>>(`/services/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Fetch service requirements and dynamic schema
+   */
+  getServiceRequirements: async (serviceId: string): Promise<ApiResponse<ServiceRequirementsSchema>> => {
+    const response = await axiosClient.get<ApiResponse<ServiceRequirementsSchema>>(
+      `/services/${serviceId}/requirements`
+    );
     return response.data;
   },
 
@@ -320,8 +411,8 @@ export const citizenApi = {
   /**
    * Fetch user notifications
    */
-  getNotifications: async (): Promise<ApiResponse<NotificationItem[]>> => {
-    const response = await axiosClient.get<ApiResponse<NotificationItem[]>>("/notifications");
+  getNotifications: async (params?: { filter?: string; limit?: number }): Promise<ApiResponse<any>> => {
+    const response = await axiosClient.get<ApiResponse<any>>("/notifications", { params });
     return response.data;
   },
 
@@ -338,6 +429,57 @@ export const citizenApi = {
    */
   markAllNotificationsRead: async (): Promise<ApiResponse<any>> => {
     const response = await axiosClient.post<ApiResponse<any>>("/notifications/mark-all-read");
+    return response.data;
+  },
+
+  /**
+   * Query SETU AI Assistant
+   */
+  chatWithAssistant: async (payload: {
+    message: string;
+    language?: string;
+  }): Promise<ApiResponse<any>> => {
+    const response = await axiosClient.post<ApiResponse<any>>("/assistant/chat", payload);
+    return response.data;
+  },
+
+  /**
+   * Fetch government schemes catalog
+   */
+  getSchemes: async (params?: { q?: string; category?: string; state?: string; limit?: number; offset?: number }): Promise<ApiResponse<any>> => {
+    const response = await axiosClient.get<ApiResponse<any>>("/schemes", { params });
+    return response.data;
+  },
+
+  /**
+   * Fetch government scheme details by slug or code
+   */
+  getSchemeDetails: async (slugOrCode: string): Promise<ApiResponse<any>> => {
+    const response = await axiosClient.get<ApiResponse<any>>(`/schemes/${slugOrCode}`);
+    return response.data;
+  },
+
+  /**
+   * Check preliminary scheme eligibility
+   */
+  checkSchemeEligibility: async (slugOrCode: string, payload: any): Promise<ApiResponse<any>> => {
+    const response = await axiosClient.post<ApiResponse<any>>(`/schemes/${slugOrCode}/check-eligibility`, payload);
+    return response.data;
+  },
+
+  /**
+   * Get 16-category service catalog with internal vs external metadata
+   */
+  getCategorizedServices: async (params?: { search?: string; category?: string }): Promise<ApiResponse<any>> => {
+    const response = await axiosClient.get<ApiResponse<any>>("/services/catalog/categorized", { params });
+    return response.data;
+  },
+
+  /**
+   * Global citizen search across services and schemes
+   */
+  globalSearch: async (query: string): Promise<ApiResponse<any>> => {
+    const response = await axiosClient.get<ApiResponse<any>>("/services/global/search", { params: { q: query } });
     return response.data;
   },
 };

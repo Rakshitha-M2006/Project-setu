@@ -2,6 +2,9 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
+import { LanguageProvider } from "./context/LanguageContext";
+import LanguageSelectorModal from "./components/common/LanguageSelectorModal";
+import SetuAssistant from "./components/assistant/SetuAssistant";
 
 // Layouts
 import PublicLayout from "./components/layouts/PublicLayout";
@@ -31,6 +34,8 @@ import ApplicationDetailPage from "./pages/citizen/ApplicationDetailPage";
 import ServicesCatalogPage from "./pages/citizen/ServicesCatalogPage";
 import ServiceDetailPage from "./pages/citizen/ServiceDetailPage";
 import ApplyServicePage from "./pages/citizen/ApplyServicePage";
+import SchemesCatalogPage from "./pages/citizen/SchemesCatalogPage";
+import SchemeDetailPage from "./pages/citizen/SchemeDetailPage";
 import CitizenNotificationsPage from "./pages/citizen/CitizenNotificationsPage";
 
 // Officer Portal Pages
@@ -57,95 +62,101 @@ import AdminAnomaliesPage from "./pages/admin/AdminAnomaliesPage";
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <ToastProvider>
-        <AuthProvider>
-          <Routes>
-            {/* 1. Public Routes (PublicLayout) */}
-            <Route element={<PublicLayout />}>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/unauthorized" element={<UnauthorizedPage />} />
-              <Route path="/404" element={<NotFoundPage />} />
-            </Route>
+      <LanguageProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <LanguageSelectorModal />
+            <SetuAssistant />
+            <Routes>
+              {/* 1. Public Routes (PublicLayout) */}
+              <Route element={<PublicLayout />}>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/unauthorized" element={<UnauthorizedPage />} />
+                <Route path="/404" element={<NotFoundPage />} />
+              </Route>
 
-            {/* 2. Protected Citizen Routes (CitizenLayout) */}
-            <Route
-              element={
-                <ProtectedRoute allowedRoles={["CITIZEN"]}>
-                  <CitizenLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/citizen" element={<CitizenDashboardPage />} />
-              <Route path="/citizen/dashboard" element={<CitizenDashboardPage />} />
-              <Route path="/citizen/profile" element={<CitizenProfilePage />} />
-              <Route path="/citizen/grievances" element={<CitizenGrievancesPage />} />
-              <Route path="/citizen/grievances/new" element={<NewGrievancePage />} />
-              <Route path="/citizen/grievances/:id" element={<GrievanceDetailPage />} />
-              <Route path="/citizen/services" element={<ServicesCatalogPage />} />
-              <Route path="/citizen/services/:id" element={<ServiceDetailPage />} />
-              <Route path="/citizen/services/:id/apply" element={<ApplyServicePage />} />
-              <Route path="/citizen/applications" element={<CitizenApplicationsPage />} />
-              <Route path="/citizen/applications/:id" element={<ApplicationDetailPage />} />
-              <Route path="/citizen/notifications" element={<CitizenNotificationsPage />} />
-            </Route>
+              {/* 2. Protected Citizen Routes (CitizenLayout) */}
+              <Route
+                element={
+                  <ProtectedRoute allowedRoles={["CITIZEN"]}>
+                    <CitizenLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/citizen" element={<CitizenDashboardPage />} />
+                <Route path="/citizen/dashboard" element={<CitizenDashboardPage />} />
+                <Route path="/citizen/profile" element={<CitizenProfilePage />} />
+                <Route path="/citizen/grievances" element={<CitizenGrievancesPage />} />
+                <Route path="/citizen/grievances/new" element={<NewGrievancePage />} />
+                <Route path="/citizen/grievances/:id" element={<GrievanceDetailPage />} />
+                <Route path="/citizen/services" element={<ServicesCatalogPage />} />
+                <Route path="/citizen/services/:id" element={<ServiceDetailPage />} />
+                <Route path="/citizen/services/:id/apply" element={<ApplyServicePage />} />
+                <Route path="/citizen/schemes" element={<SchemesCatalogPage />} />
+                <Route path="/citizen/schemes/:id" element={<SchemeDetailPage />} />
+                <Route path="/citizen/applications" element={<CitizenApplicationsPage />} />
+                <Route path="/citizen/applications/:id" element={<ApplicationDetailPage />} />
+                <Route path="/citizen/notifications" element={<CitizenNotificationsPage />} />
+              </Route>
 
-            {/* 3. Protected Field Officer Routes (OfficerLayout) */}
-            <Route
-              element={
-                <ProtectedRoute allowedRoles={["OFFICER", "SENIOR_OFFICER", "ADMIN"]}>
-                  <OfficerLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/officer" element={<OfficerDashboardPage />} />
-              <Route path="/officer/dashboard" element={<OfficerDashboardPage />} />
-              <Route path="/officer/grievances" element={<OfficerGrievancesPage />} />
-              <Route path="/officer/grievances/:id" element={<OfficerGrievanceDetailPage />} />
-              <Route path="/officer/profile" element={<OfficerProfilePage />} />
-            </Route>
+              {/* 3. Protected Field Officer Routes (OfficerLayout) */}
+              <Route
+                element={
+                  <ProtectedRoute allowedRoles={["OFFICER", "SENIOR_OFFICER", "ADMIN"]}>
+                    <OfficerLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/officer" element={<OfficerDashboardPage />} />
+                <Route path="/officer/dashboard" element={<OfficerDashboardPage />} />
+                <Route path="/officer/grievances" element={<OfficerGrievancesPage />} />
+                <Route path="/officer/grievances/:id" element={<OfficerGrievanceDetailPage />} />
+                <Route path="/officer/profile" element={<OfficerProfilePage />} />
+              </Route>
 
-            {/* 4. Protected Senior Officer / HOD Routes (SeniorOfficerLayout) */}
-            <Route
-              element={
-                <ProtectedRoute allowedRoles={["SENIOR_OFFICER", "ADMIN"]}>
-                  <SeniorOfficerLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/senior-officer" element={<SeniorOfficerDashboard />} />
-              <Route path="/senior-officer/escalations" element={<SeniorOfficerDashboard />} />
-              <Route path="/senior-officer/officers" element={<SeniorOfficerDashboard />} />
-              <Route path="/senior-officer/analytics" element={<SeniorOfficerDashboard />} />
-            </Route>
+              {/* 4. Protected Senior Officer / HOD Routes (SeniorOfficerLayout) */}
+              <Route
+                element={
+                  <ProtectedRoute allowedRoles={["SENIOR_OFFICER", "ADMIN"]}>
+                    <SeniorOfficerLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/senior-officer" element={<SeniorOfficerDashboard />} />
+                <Route path="/senior-officer/escalations" element={<SeniorOfficerDashboard />} />
+                <Route path="/senior-officer/officers" element={<SeniorOfficerDashboard />} />
+                <Route path="/senior-officer/analytics" element={<SeniorOfficerDashboard />} />
+              </Route>
 
-            {/* 5. Protected Super Admin Routes (AdminLayout) */}
-            <Route
-              element={
-                <ProtectedRoute allowedRoles={["ADMIN"]}>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              <Route path="/admin/anomalies" element={<AdminAnomaliesPage />} />
-              <Route path="/admin/users" element={<AdminUsersPage />} />
-              <Route path="/admin/officers" element={<AdminOfficersPage />} />
-              <Route path="/admin/departments" element={<AdminDepartmentsPage />} />
-              <Route path="/admin/grievances" element={<AdminGrievancesPage />} />
-              <Route path="/admin/services" element={<AdminServicesPage />} />
-              <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
-              <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
-              <Route path="/admin/ai-monitoring" element={<AdminAiMonitoringPage />} />
-            </Route>
+              {/* 5. Protected Super Admin Routes (AdminLayout) */}
+              <Route
+                element={
+                  <ProtectedRoute allowedRoles={["ADMIN"]}>
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                <Route path="/admin/anomalies" element={<AdminAnomaliesPage />} />
+                <Route path="/admin/users" element={<AdminUsersPage />} />
+                <Route path="/admin/officers" element={<AdminOfficersPage />} />
+                <Route path="/admin/departments" element={<AdminDepartmentsPage />} />
+                <Route path="/admin/grievances" element={<AdminGrievancesPage />} />
+                <Route path="/admin/services" element={<AdminServicesPage />} />
+                <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+                <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
+                <Route path="/admin/ai-monitoring" element={<AdminAiMonitoringPage />} />
+              </Route>
 
-            {/* 6. Fallback 404 Catch-all */}
-            <Route path="*" element={<Navigate to="/404" replace />} />
-          </Routes>
-        </AuthProvider>
-      </ToastProvider>
+              {/* 6. Fallback 404 Catch-all */}
+              <Route path="*" element={<Navigate to="/404" replace />} />
+            </Routes>
+          </AuthProvider>
+        </ToastProvider>
+      </LanguageProvider>
     </BrowserRouter>
   );
 };

@@ -6,8 +6,11 @@ import { Role } from "@prisma/client";
 
 const router = Router();
 
-// 1. Public Government Services Catalog
+// 1. Public Government Services Catalog & Requirements Schema
+router.get("/global/search", (req, res, next) => serviceController.globalSearch(req, res, next));
+router.get("/catalog/categorized", (req, res, next) => serviceController.getServiceCatalog(req, res, next));
 router.get("/", (req, res, next) => serviceController.getServices(req, res, next));
+router.get("/:id/requirements", (req, res, next) => serviceController.getServiceRequirements(req, res, next));
 router.get("/:id", (req, res, next) => serviceController.getServiceById(req, res, next));
 
 // 2. Private Citizen Application Management

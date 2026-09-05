@@ -8,7 +8,7 @@ const INDIAN_PHONE_REGEX = /^(?:\+91|91)?[6-9]\d{9}$/;
 const INDIAN_PINCODE_REGEX = /^[1-9][0-9]{5}$/;
 
 // Regex for password: min 8 characters, at least 1 letter and 1 number
-const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&_\-\.]{8,}$/;
+const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&_\-\.`~()+=<>:;"'/\\[\]{}|]{8,}$/;
 
 export const registerCitizenSchema = z.object({
   body: z.object({
@@ -36,39 +36,40 @@ export const registerCitizenSchema = z.object({
       .regex(PASSWORD_REGEX, "Password must contain at least 8 characters including letters and numbers"),
 
     dateOfBirth: z
-      .string({ required_error: "Date of birth is required" })
+      .string()
       .trim()
-      .refine((dobStr) => {
-        const parsed = new Date(dobStr);
-        if (isNaN(parsed.getTime())) return false;
-        // Must not be a future date
-        return parsed <= new Date();
-      }, "Date of birth must be a valid date and cannot be in the future"),
+      .optional()
+      .nullable()
+      .default("2000-01-01"),
 
-    gender: z.nativeEnum(Gender, {
-      required_error: "Gender is required",
-      invalid_type_error: "Please select a valid gender option",
-    }),
+    gender: z
+      .nativeEnum(Gender)
+      .optional()
+      .nullable()
+      .default(Gender.MALE),
 
     addressLine1: z
-      .string({ required_error: "Residential address is required" })
+      .string()
       .trim()
-      .min(3, "Address must be at least 3 characters long")
-      .max(255, "Address must not exceed 255 characters"),
+      .optional()
+      .nullable()
+      .default("Residential Address"),
 
     addressLine2: z.string().trim().max(255).optional().nullable(),
 
     city: z
-      .string({ required_error: "City is required" })
+      .string()
       .trim()
-      .min(2, "City must be at least 2 characters long")
-      .max(100, "City must not exceed 100 characters"),
+      .optional()
+      .nullable()
+      .default("District Center"),
 
     state: z
-      .string({ required_error: "State is required" })
+      .string()
       .trim()
-      .min(2, "State must be at least 2 characters long")
-      .max(100, "State must not exceed 100 characters"),
+      .optional()
+      .nullable()
+      .default("State"),
 
     pincode: z
       .string({ required_error: "Pincode is required" })

@@ -12,6 +12,8 @@ import uploadRoutes from "./uploadRoutes";
 import adminRoutes from "./adminRoutes";
 import analyticsRoutes from "./analyticsRoutes";
 import anomalyRoutes from "./anomalyRoutes";
+import assistantRoutes from "./assistantRoutes";
+import schemeRoutes from "./schemeRoutes";
 import { requireAuth, requireRole, requireAnyRole } from "../../middleware/authMiddleware";
 import { ApiResponse } from "../../utils/apiResponse";
 import { Role } from "@prisma/client";
@@ -23,6 +25,9 @@ router.use("/", healthRoutes);
 
 // Authentication & Identity
 router.use("/auth", authRoutes);
+
+// AI Navigator & Citizen Assistant
+router.use("/assistant", assistantRoutes);
 
 // Citizen Portal Endpoints
 router.use("/citizen", citizenRoutes);
@@ -50,6 +55,9 @@ router.use("/uploads", uploadRoutes);
 
 // Public Services Endpoints
 router.use("/services", serviceRoutes);
+
+// Government Schemes Discovery & Eligibility Endpoints
+router.use("/schemes", schemeRoutes);
 
 // Notifications Endpoints
 router.use("/notifications", notificationRoutes);

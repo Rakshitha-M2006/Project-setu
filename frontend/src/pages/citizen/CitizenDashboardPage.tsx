@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import citizenApi, { CitizenDashboardStats, GrievanceItem } from "../../api/citizenApi";
+import { useLanguage } from "../../context/LanguageContext";
+import citizenApi, { CitizenDashboardStats, GrievanceItem, SchemeItem } from "../../api/citizenApi";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, EmptyTableState } from "../../components/ui/Table";
@@ -10,6 +11,7 @@ import { StatusBadge } from "../../components/ui/StatusBadge";
 import { Modal } from "../../components/ui/Modal";
 import { Input } from "../../components/ui/Input";
 import { Alert } from "../../components/ui/Alert";
+import SchemeEligibilityModal from "../../components/schemes/SchemeEligibilityModal";
 import {
   FilePlus,
   Search,
@@ -21,13 +23,18 @@ import {
   ArrowRight,
   RefreshCw,
   ShieldCheck,
-} from "lucide-react";
+  Layers,
+  Sparkles,
+  } from "lucide-react";
 
 export const CitizenDashboardPage: React.FC = () => {
   const { user } = useAuth();
   const toast = useToast();
+  const { t, language } = useLanguage();
 
   const [statsData, setStatsData] = useState<CitizenDashboardStats | null>(null);
+  const [featuredSchemes, setFeaturedSchemes] = useState<SchemeItem[]>([]);
+  const [selectedSchemeForCheck, setSelectedSchemeForCheck] = useState<SchemeItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -44,11 +51,19 @@ export const CitizenDashboardPage: React.FC = () => {
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      const response = await citizenApi.getDashboardStats();
-      if (response.success && response.data) {
-        setStatsData(response.data);
+      const [statsRes, schemesRes] = await Promise.all([
+        citizenApi.getDashboardStats(),
+        citizenApi.getSchemes({ limit: 4 }).catch(() => null),
+      ]);
+
+      if (statsRes.success && statsRes.data) {
+        setStatsData(statsRes.data);
       } else {
         setErrorMsg("Failed to retrieve dashboard metrics.");
+      }
+
+      if (schemesRes && schemesRes.success && schemesRes.data) {
+        setFeaturedSchemes(schemesRes.data.schemes || []);
       }
     } catch (err: any) {
       const message = err.response?.data?.message || "Could not connect to backend service.";
@@ -80,7 +95,7 @@ export const CitizenDashboardPage: React.FC = () => {
           toast.warning("No grievance found with this tracking number in your records.", "Search Result");
         }
       }
-    } catch (err: any) {
+    } catch {
       toast.error("Failed to search grievance records.", "Error");
     } finally {
       setIsSearching(false);
@@ -103,21 +118,20 @@ export const CitizenDashboardPage: React.FC = () => {
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="bg-blue-500/30 text-blue-200 text-xs px-2.5 py-0.5 rounded-full border border-blue-400/30 font-medium">
-              Citizen Redressal Portal
+              {t("dashboard.activeCitizenPortal")}
             </span>
             <span className="flex items-center gap-1 text-[11px] text-emerald-300 font-medium">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Aadhaar eKYC Verified</span>
+              <span>{t("common.ekycLinked")}</span>
             </span>
           </div>
 
           <h1 className="text-xl sm:text-2xl font-black tracking-tight">
-            Namaste, {user?.fullName} 🙏
+            {t("dashboard.welcomeBack")} {user?.fullName} 🙏
           </h1>
 
           <p className="text-xs sm:text-sm text-blue-200/90 max-w-xl leading-relaxed">
-            All submitted grievances are automatically triaged by the AI classification engine and
-            routed to jurisdictional authorities with strict SLA guarantees.
+            {t("common.appTagline")}
           </p>
         </div>
 
@@ -130,7 +144,7 @@ export const CitizenDashboardPage: React.FC = () => {
             className="bg-white/10 border-white/20 text-white hover:bg-white/20"
             leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
           >
-            Refresh Feed
+            {t("notifications.refresh") || "Refresh"}
           </Button>
         </div>
       </div>
@@ -152,46 +166,39 @@ export const CitizenDashboardPage: React.FC = () => {
               </div>
               <div className="space-y-1">
                 <h4 className="text-sm font-bold text-slate-900 group-hover:text-blue-700 transition flex items-center gap-1">
-                  <span>Lodge New Grievance</span>
+                  <span>{t("dashboard.lodgeGrievanceBtn")}</span>
                   <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition" />
                 </h4>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Report civic problems (Water, Roads, Power, Sanitation) directly to authorities.
+                  {t("grievances.subtitle")}
                 </p>
               </div>
             </CardContent>
           </Card>
         </Link>
 
-        {/* Action 2: Track Grievance */}
-        <div
-          onClick={() => {
-            setSearchTrackingNumber("");
-            setSearchedGrievance(null);
-            setTrackModalOpen(true);
-          }}
-          className="cursor-pointer group"
-        >
-          <Card className="border-amber-200 bg-amber-50/50 hover:bg-amber-50 hover:border-amber-400 transition shadow-sm h-full">
+        {/* Action 2: Government Welfare Schemes */}
+        <Link to="/citizen/schemes" className="block group">
+          <Card className="border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 hover:border-emerald-400 transition shadow-sm h-full">
             <CardContent className="p-5 flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition">
-                <Search className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition">
+                <Layers className="w-5 h-5" />
               </div>
               <div className="space-y-1">
-                <h4 className="text-sm font-bold text-slate-900 group-hover:text-amber-800 transition flex items-center gap-1">
-                  <span>Track Grievance</span>
+                <h4 className="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition flex items-center gap-1">
+                  <span>{t("nav.schemes") || "Government Schemes"}</span>
                   <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition" />
                 </h4>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Search by SETU tracking token to check live status and officer timeline updates.
+                  {t("schemes.subtitle") || "Explore verified welfare schemes & evaluate eligibility in 60 seconds."}
                 </p>
               </div>
             </CardContent>
           </Card>
-        </div>
+        </Link>
 
-        {/* Action 3: Apply Government Service */}
-        <Link to="/citizen/applications" className="block group">
+        {/* Action 3: Browse Services */}
+        <Link to="/citizen/services" className="block group">
           <Card className="border-purple-200 bg-purple-50/50 hover:bg-purple-50 hover:border-purple-400 transition shadow-sm h-full">
             <CardContent className="p-5 flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-purple-700 text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition">
@@ -199,11 +206,11 @@ export const CitizenDashboardPage: React.FC = () => {
               </div>
               <div className="space-y-1">
                 <h4 className="text-sm font-bold text-slate-900 group-hover:text-purple-700 transition flex items-center gap-1">
-                  <span>Apply Public Service</span>
+                  <span>{t("dashboard.applyServiceBtn")}</span>
                   <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition" />
                 </h4>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Apply for digital certificates, new water connections, smart meters & permits.
+                  {t("services.subtitle")}
                 </p>
               </div>
             </CardContent>
@@ -211,12 +218,12 @@ export const CitizenDashboardPage: React.FC = () => {
         </Link>
       </div>
 
-      {/* 3. Real Dashboard Metric Counters */}
+      {/* 3. Metric Counters */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="border-slate-200">
           <CardContent className="p-4 sm:p-5 flex items-center justify-between">
             <div className="space-y-1">
-              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Lodged</p>
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t("dashboard.totalGrievances")}</p>
               <p className="text-2xl font-black text-slate-900 font-mono">{metrics.totalGrievances}</p>
             </div>
             <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
@@ -228,7 +235,7 @@ export const CitizenDashboardPage: React.FC = () => {
         <Card className="border-slate-200">
           <CardContent className="p-4 sm:p-5 flex items-center justify-between">
             <div className="space-y-1">
-              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Pending Triage</p>
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t("dashboard.pendingGrievances")}</p>
               <p className="text-2xl font-black text-purple-600 font-mono">{metrics.pendingGrievances}</p>
             </div>
             <div className="w-9 h-9 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center">
@@ -252,7 +259,7 @@ export const CitizenDashboardPage: React.FC = () => {
         <Card className="border-slate-200">
           <CardContent className="p-4 sm:p-5 flex items-center justify-between">
             <div className="space-y-1">
-              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Resolved</p>
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t("dashboard.resolvedGrievances")}</p>
               <p className="text-2xl font-black text-emerald-600 font-mono">{metrics.resolvedGrievances}</p>
             </div>
             <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
@@ -264,7 +271,7 @@ export const CitizenDashboardPage: React.FC = () => {
         <Card className="border-slate-200 col-span-2 sm:col-span-1">
           <CardContent className="p-4 sm:p-5 flex items-center justify-between">
             <div className="space-y-1">
-              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Active Services</p>
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t("dashboard.activeApplications")}</p>
               <p className="text-2xl font-black text-indigo-600 font-mono">{metrics.activeApplications}</p>
             </div>
             <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
@@ -274,19 +281,73 @@ export const CitizenDashboardPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* 4. Two Column Layout: Recent Grievances & Live Notifications */}
+      {/* 4. Featured Welfare Schemes Section */}
+      {featuredSchemes.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-emerald-600" />
+                <span>{t("nav.schemes") || "Government Welfare Schemes"}</span>
+              </h3>
+              <p className="text-xs text-slate-500">
+                Direct statutory benefits, pension schemes, and agriculture subsidies
+              </p>
+            </div>
+            <Link to="/citizen/schemes">
+              <Button variant="ghost" size="sm" className="text-xs" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
+                {t("dashboard.viewAll")}
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {featuredSchemes.map((scheme) => (
+              <Card key={scheme.id} className="border-slate-200 shadow-xs hover:border-emerald-300 hover:shadow-sm transition flex flex-col justify-between p-4 space-y-3">
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    {scheme.category}
+                  </span>
+                  <h4 className="font-bold text-xs text-slate-900 line-clamp-2">
+                    {scheme.translations?.[language]?.name || scheme.name}
+                  </h4>
+                  <p className="text-[11px] text-slate-500 line-clamp-2">
+                    {scheme.translations?.[language]?.shortDescription || scheme.shortDescription}
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <button
+                    onClick={() => setSelectedSchemeForCheck(scheme)}
+                    className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 hover:underline"
+                  >
+                    {t("services.checkEligibility")}
+                  </button>
+                  <Link to={`/citizen/schemes/${scheme.slug}`}>
+                    <Button variant="outline" size="sm" className="text-[11px] py-1 px-2">
+                      {t("common.view")}
+                    </Button>
+                  </Link>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 5. Two Column Layout: Recent Grievances & Live Notifications */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Recent Grievances Table (2 Cols) */}
         <div className="lg:col-span-2 space-y-4">
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <div>
-                <CardTitle className="text-base">Recent Grievances</CardTitle>
+                <CardTitle className="text-base">{t("dashboard.recentGrievances")}</CardTitle>
                 <CardDescription>Real-time status of complaints lodged under your profile</CardDescription>
               </div>
               <Link to="/citizen/grievances">
                 <Button variant="ghost" size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
-                  View All
+                  {t("dashboard.viewAll")}
                 </Button>
               </Link>
             </CardHeader>
@@ -306,13 +367,13 @@ export const CitizenDashboardPage: React.FC = () => {
                   {isLoading ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-xs text-slate-400">
-                        Loading grievances...
+                        {t("common.loading")}
                       </TableCell>
                     </TableRow>
                   ) : !statsData?.recentGrievances || statsData.recentGrievances.length === 0 ? (
                     <EmptyTableState
                       title="No complaints lodged yet"
-                      description="Use the 'Lodge New Grievance' button above to submit your first issue."
+                      description="Use the 'Lodge Grievance' button above to submit your first issue."
                       colSpan={6}
                     />
                   ) : (
@@ -321,7 +382,7 @@ export const CitizenDashboardPage: React.FC = () => {
                         <TableCell className="font-mono font-bold text-blue-700 text-xs">
                           {g.trackingNumber}
                         </TableCell>
-                        <TableCell className="font-medium text-slate-900 max-w-xs truncate">
+                        <TableCell className="font-medium text-slate-900 max-w-xs truncate text-xs">
                           {g.title}
                         </TableCell>
                         <TableCell className="text-xs text-slate-500">
@@ -338,7 +399,7 @@ export const CitizenDashboardPage: React.FC = () => {
                             onClick={() => setSelectedGrievance(g)}
                             className="text-xs font-semibold text-blue-700 hover:text-blue-900 hover:underline"
                           >
-                            Details
+                            {t("common.viewDetails")}
                           </button>
                         </TableCell>
                       </TableRow>
@@ -356,17 +417,17 @@ export const CitizenDashboardPage: React.FC = () => {
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <div className="flex items-center gap-2">
                 <Bell className="w-4 h-4 text-blue-700" />
-                <CardTitle className="text-base">Notifications</CardTitle>
+                <CardTitle className="text-base">{t("common.notifications")}</CardTitle>
               </div>
               <Link to="/citizen/notifications">
                 <Button variant="ghost" size="sm" className="text-xs">
-                  All
+                  {t("common.all")}
                 </Button>
               </Link>
             </CardHeader>
             <CardContent className="p-4 space-y-3">
               {isLoading ? (
-                <p className="text-xs text-slate-400 text-center py-6">Loading alerts...</p>
+                <p className="text-xs text-slate-400 text-center py-6">{t("common.loading")}</p>
               ) : !statsData?.recentNotifications || statsData.recentNotifications.length === 0 ? (
                 <div className="text-center py-8 space-y-2">
                   <Bell className="w-8 h-8 text-slate-300 mx-auto" />
@@ -389,7 +450,7 @@ export const CitizenDashboardPage: React.FC = () => {
                     </div>
                     <p className="text-xs text-slate-600 mt-1 leading-relaxed">{n.message}</p>
                     <span className="text-[10px] text-slate-400 mt-2 block font-mono">
-                      {new Date(n.createdAt).toLocaleDateString()} • {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(n.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 ))
@@ -433,17 +494,6 @@ export const CitizenDashboardPage: React.FC = () => {
               <p className="font-bold text-sm text-slate-900">{searchedGrievance.title}</p>
               <p className="text-xs text-slate-500 mt-1">{searchedGrievance.description}</p>
             </div>
-
-            <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-200 text-slate-600">
-              <div>
-                <span className="text-slate-400 block text-[10px]">Department:</span>
-                <span className="font-medium">{searchedGrievance.department?.name || "AI Triaging"}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block text-[10px]">Priority:</span>
-                <StatusBadge status={searchedGrievance.priority} type="priority" size="sm" />
-              </div>
-            </div>
           </div>
         )}
       </Modal>
@@ -461,11 +511,6 @@ export const CitizenDashboardPage: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={selectedGrievance.status} />
               <StatusBadge status={selectedGrievance.priority} type="priority" />
-              {selectedGrievance.isUrgent && (
-                <span className="bg-rose-100 text-rose-800 text-xs px-2.5 py-0.5 rounded-full font-bold border border-rose-200">
-                  🚨 High Urgent Trigger
-                </span>
-              )}
             </div>
 
             <div className="space-y-1">
@@ -479,23 +524,17 @@ export const CitizenDashboardPage: React.FC = () => {
                 {selectedGrievance.description}
               </p>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <div>
-                <span className="text-slate-400 block text-[11px]">Assigned Department:</span>
-                <span className="font-bold text-slate-800">
-                  {selectedGrievance.department?.name || "General Administration"}
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-400 block text-[11px]">Location / Pincode:</span>
-                <span className="font-bold text-slate-800">
-                  {selectedGrievance.addressText || "Not specified"} ({selectedGrievance.pincode || "N/A"})
-                </span>
-              </div>
-            </div>
           </div>
         </Modal>
+      )}
+
+      {/* Eligibility Modal for featured schemes */}
+      {selectedSchemeForCheck && (
+        <SchemeEligibilityModal
+          scheme={selectedSchemeForCheck}
+          isOpen={!!selectedSchemeForCheck}
+          onClose={() => setSelectedSchemeForCheck(null)}
+        />
       )}
     </div>
   );

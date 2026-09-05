@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState, useRef } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
 import citizenApi from "../../api/citizenApi";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/Card";
@@ -21,6 +21,12 @@ import {
   ExternalLink,
   Info,
   ShieldCheck,
+  Camera,
+  Image as ImageIcon,
+  RotateCcw,
+  Eye,
+  X,
+  Compass,
 } from "lucide-react";
 
 interface AttachmentFile {
@@ -33,6 +39,11 @@ interface AttachmentFile {
 
 export const NewGrievancePage: React.FC = () => {
   const toast = useToast();
+  const location = useLocation();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const replaceInputRef = useRef<HTMLInputElement | null>(null);
+  const [replacingIndex, setReplacingIndex] = useState<number | null>(null);
 
   // Form Fields
   const [title, setTitle] = useState("");
@@ -46,14 +57,28 @@ export const NewGrievancePage: React.FC = () => {
   const [state, setState] = useState("");
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
   const [additionalDetails, setAdditionalDetails] = useState("");
   const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
+  const [previewModalImg, setPreviewModalImg] = useState<{ url: string; title: string } | null>(null);
 
   // State Management
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Check prefill state from navigation (e.g. SETU Assistant)
+  useEffect(() => {
+    if (location.state && (location.state as any).prefill) {
+      const p = (location.state as any).prefill;
+      if (p.title) setTitle(p.title);
+      if (p.description) setDescription(p.description);
+      if (p.departmentId) setDepartmentId(p.departmentId);
+      if (p.addressText) setAddressText(p.addressText);
+      if (p.pincode) setPincode(p.pincode);
+    }
+  }, [location.state]);
 
   // Success Confirmation State
   const [submittedGrievance, setSubmittedGrievance] = useState<{
@@ -86,7 +111,7 @@ export const NewGrievancePage: React.FC = () => {
   const selectedDept = departments.find((d) => d.id === departmentId);
   const categories: GrievanceCategory[] = selectedDept?.categories || [];
 
-  // GPS Location Auto-Detection
+  // GPS Location Auto-Detection with High Accuracy & Fallback
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
       toast.error("Geolocation is not supported by your browser.", "GPS Error");
@@ -96,26 +121,33 @@ export const NewGrievancePage: React.FC = () => {
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLatitude(parseFloat(position.coords.latitude.toFixed(6)));
-        setLongitude(parseFloat(position.coords.longitude.toFixed(6)));
+        const lat = parseFloat(position.coords.latitude.toFixed(6));
+        const lng = parseFloat(position.coords.longitude.toFixed(6));
+        const acc = Math.round(position.coords.accuracy);
+
+        setLatitude(lat);
+        setLongitude(lng);
+        setGpsAccuracy(acc);
         setIsLocating(false);
+
         toast.success(
-          `GPS Coordinates captured: ${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`,
-          "Location Detected"
+          `GPS Coordinates captured (${lat}, ${lng}) with ±${acc}m accuracy.`,
+          "Location Tagged"
         );
       },
-      () => {
+      (error) => {
         setIsLocating(false);
-        toast.warning(
-          "Could not acquire exact GPS coordinates. You may enter the physical address manually.",
-          "Location Notice"
-        );
+        let msg = "Could not acquire GPS coordinates. Please enter the physical address manually.";
+        if (error.code === error.PERMISSION_DENIED) {
+          msg = "Location permission denied. Please enter address details manually.";
+        }
+        toast.warning(msg, "Location Notice");
       },
-      { timeout: 10000, enableHighAccuracy: true }
+      { timeout: 12000, enableHighAccuracy: true }
     );
   };
 
-  // Mock / Client Attachment Handler
+  // Upload Photo / Evidence
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -124,11 +156,10 @@ export const NewGrievancePage: React.FC = () => {
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
       if (f.size > 10 * 1024 * 1024) {
-        toast.warning(`File ${f.name} exceeds maximum 10MB limit.`, "File Too Large");
+        toast.warning(`File '${f.name}' exceeds maximum 10MB limit.`, "File Too Large");
         continue;
       }
 
-      // Create preview / simulated file URL
       const fileUrl = URL.createObjectURL(f);
       newAttachments.push({
         fileName: `${Date.now()}-${f.name.replace(/\s+/g, "_")}`,
@@ -140,11 +171,51 @@ export const NewGrievancePage: React.FC = () => {
     }
 
     setAttachments((prev) => [...prev, ...newAttachments]);
-    toast.success(`${newAttachments.length} document(s) attached.`, "Attachment Added");
+    toast.success(`${newAttachments.length} evidence file(s) attached.`, "Evidence Added");
+    if (e.target) e.target.value = "";
+  };
+
+  // Replace existing attachment
+  const triggerReplace = (index: number) => {
+    setReplacingIndex(index);
+    if (replaceInputRef.current) {
+      replaceInputRef.current.click();
+    }
+  };
+
+  const handleReplaceFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || replacingIndex === null) return;
+
+    const f = files[0];
+    if (f.size > 10 * 1024 * 1024) {
+      toast.warning(`File '${f.name}' exceeds 10MB limit.`, "File Too Large");
+      return;
+    }
+
+    const fileUrl = URL.createObjectURL(f);
+    const updatedDoc: AttachmentFile = {
+      fileName: `${Date.now()}-${f.name.replace(/\s+/g, "_")}`,
+      originalName: f.name,
+      fileUrl,
+      mimeType: f.type || "application/octet-stream",
+      fileSizeBytes: f.size,
+    };
+
+    setAttachments((prev) => {
+      const copy = [...prev];
+      copy[replacingIndex] = updatedDoc;
+      return copy;
+    });
+
+    toast.success(`Attachment replaced with '${f.name}'.`, "Evidence Updated");
+    setReplacingIndex(null);
+    if (e.target) e.target.value = "";
   };
 
   const handleRemoveAttachment = (index: number) => {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
+    toast.info("Attachment removed.", "Removed");
   };
 
   const handleCopyTrackingNumber = () => {
@@ -457,13 +528,18 @@ export const NewGrievancePage: React.FC = () => {
             />
 
             {/* Location & GPS Coordinates Section */}
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-4">
-              <div className="flex items-center justify-between">
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-blue-700" />
-                  <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                    Incident Location & Geography
-                  </span>
+                  <div>
+                    <span className="text-xs font-bold text-slate-900 uppercase tracking-wider block">
+                      Incident Location & Geo-Tagging
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      Coordinates aid quick navigation for field response teams.
+                    </span>
+                  </div>
                 </div>
 
                 <Button
@@ -472,118 +548,253 @@ export const NewGrievancePage: React.FC = () => {
                   size="sm"
                   onClick={handleDetectLocation}
                   isLoading={isLocating}
-                  className="text-xs bg-white text-blue-700 hover:bg-blue-50 border-blue-200 font-semibold"
+                  className="text-xs bg-white text-blue-700 hover:bg-blue-50 border-blue-200 font-bold shadow-sm"
                   leftIcon={<Navigation className="w-3.5 h-3.5 text-blue-700" />}
                 >
-                  Use My Current GPS Location
+                  Acquire GPS Location
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  label="Physical Address / Street / Landmark"
-                  placeholder="e.g. Near Community Center, Sector 4"
-                  value={addressText}
-                  onChange={(e) => setAddressText(e.target.value)}
-                />
-
-                <Input
-                  label="Postal PIN Code"
-                  placeholder="e.g. 110001"
-                  value={pincode}
-                  onChange={(e) => setPincode(e.target.value)}
-                  leftIcon={<MapPin className="w-4 h-4" />}
-                />
+              {/* Informational Alert on GPS Usage */}
+              <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200 flex items-start gap-2.5 text-xs text-blue-900">
+                <Info className="w-4 h-4 text-blue-700 shrink-0 mt-0.5" />
+                <p className="leading-relaxed">
+                  <strong>Why Geo-tag?</strong> Attaching GPS coordinates enables departmental field teams to locate the problem site (e.g. leaking pipeline, road pothole, damaged street lamp) without delays. If GPS is unavailable, please provide the physical address below.
+                </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  label="District / Zone"
-                  placeholder="e.g. South Delhi / Central Zone"
-                  value={district}
-                  onChange={(e) => setDistrict(e.target.value)}
-                />
-
-                <Input
-                  label="Locality / Ward"
-                  placeholder="e.g. Ward 12 / Saket"
-                  value={locality}
-                  onChange={(e) => setLocality(e.target.value)}
-                />
-              </div>
-
-              {/* Coordinates Display */}
-              {(latitude || longitude) && (
-                <div className="p-3 rounded-lg bg-blue-100/50 border border-blue-200 flex items-center justify-between text-xs text-blue-900">
-                  <div className="flex items-center gap-2">
-                    <Navigation className="w-4 h-4 text-blue-700" />
-                    <span>
-                      GPS Coordinates Attached: <strong>{latitude}, {longitude}</strong>
-                    </span>
+              {/* Coordinates Display Card */}
+              {(latitude !== null && longitude !== null) && (
+                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs text-emerald-950">
+                  <div className="flex items-center gap-2.5">
+                    <Compass className="w-4 h-4 text-emerald-700 shrink-0" />
+                    <div>
+                      <span className="font-bold block">
+                        GPS Tagged: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+                      </span>
+                      {gpsAccuracy && (
+                        <span className="text-[10px] text-emerald-700">
+                          Estimated Accuracy: ±{gpsAccuracy} meters
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => {
                       setLatitude(null);
                       setLongitude(null);
+                      setGpsAccuracy(null);
                     }}
-                    className="text-rose-600 hover:underline font-semibold"
+                    className="text-rose-600 hover:underline font-bold text-xs"
                   >
                     Clear GPS
                   </button>
                 </div>
               )}
+
+              {/* Physical Address Fields (Manual Fallback / Reinforcement) */}
+              <div className="space-y-4 pt-1">
+                <Input
+                  label="Physical Address / Landmark / Street Name"
+                  placeholder="e.g. Near Market Gate 2, Sector 4"
+                  value={addressText}
+                  onChange={(e) => setAddressText(e.target.value)}
+                />
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <Input
+                    label="Locality / Ward"
+                    placeholder="e.g. Ward 12 / Saket"
+                    value={locality}
+                    onChange={(e) => setLocality(e.target.value)}
+                  />
+
+                  <Input
+                    label="District / Zone"
+                    placeholder="e.g. South Delhi"
+                    value={district}
+                    onChange={(e) => setDistrict(e.target.value)}
+                  />
+
+                  <Input
+                    label="Postal PIN Code"
+                    placeholder="e.g. 110001"
+                    value={pincode}
+                    onChange={(e) => setPincode(e.target.value)}
+                    leftIcon={<MapPin className="w-4 h-4" />}
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* Attachments Section */}
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-              <div className="flex items-center justify-between">
+            {/* Photo Evidence & Supporting Documents Section */}
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <Paperclip className="w-4 h-4 text-blue-700" />
-                  <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                    Supporting Documents & Photo Evidence
-                  </span>
+                  <Camera className="w-4 h-4 text-blue-700" />
+                  <div>
+                    <span className="text-xs font-bold text-slate-900 uppercase tracking-wider block">
+                      Photo Evidence & Supporting Documents
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      Upload photos of the problem site or related documents (PNG, JPG, PDF up to 10MB)
+                    </span>
+                  </div>
                 </div>
-                <span className="text-[11px] text-slate-400">Max 10MB per file (Images, PDF)</span>
+
+                <div className="flex items-center gap-2">
+                  {/* Hidden regular file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+
+                  {/* Hidden camera input for mobile */}
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+
+                  {/* Hidden replace input */}
+                  <input
+                    ref={replaceInputRef}
+                    type="file"
+                    accept="image/*,.pdf,.doc,.docx"
+                    onChange={handleReplaceFile}
+                    className="hidden"
+                  />
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="text-xs bg-white text-slate-700 hover:bg-slate-100 border-slate-300 font-semibold"
+                    leftIcon={<Camera className="w-3.5 h-3.5 text-blue-600" />}
+                  >
+                    Camera
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-xs bg-white text-blue-700 hover:bg-blue-50 border-blue-200 font-bold"
+                    leftIcon={<Paperclip className="w-3.5 h-3.5 text-blue-700" />}
+                  >
+                    Upload Files
+                  </Button>
+                </div>
               </div>
 
-              <label className="block border-2 border-dashed border-slate-300 rounded-xl p-4 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition">
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*,.pdf,.doc,.docx"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <Paperclip className="w-6 h-6 text-slate-400 mx-auto mb-1" />
-                <p className="text-xs font-bold text-slate-700">Click to upload photo evidence or documents</p>
-                <p className="text-[11px] text-slate-400">PNG, JPG, JPEG, PDF up to 10MB</p>
-              </label>
+              {/* Uploaded Evidence Gallery */}
+              {attachments.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+                  {attachments.map((att, idx) => {
+                    const isImg = att.mimeType.startsWith("image/") || /\.(jpg|jpeg|png|webp)$/i.test(att.fileName);
 
-              {/* Uploaded Files List */}
-              {attachments.length > 0 && (
-                <div className="space-y-2 pt-2">
-                  {attachments.map((att, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-2.5 rounded-lg bg-white border border-slate-200 text-xs"
-                    >
-                      <div className="flex items-center gap-2 truncate max-w-xs sm:max-w-md">
-                        <Paperclip className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                        <span className="font-medium text-slate-800 truncate">{att.originalName}</span>
-                        <span className="text-[10px] text-slate-400 shrink-0">
-                          ({(att.fileSizeBytes / 1024).toFixed(1)} KB)
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveAttachment(idx)}
-                        className="p-1 rounded text-rose-500 hover:bg-rose-50 transition"
+                    return (
+                      <div
+                        key={idx}
+                        className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm flex flex-col justify-between"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
+                        {isImg ? (
+                          <div className="relative h-32 bg-slate-100 overflow-hidden group">
+                            <img
+                              src={att.fileUrl}
+                              alt={att.originalName}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setPreviewModalImg({ url: att.fileUrl, title: att.originalName })}
+                                className="p-1.5 rounded-lg bg-white/90 text-slate-800 hover:bg-white transition"
+                                title="View Fullscreen"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => triggerReplace(idx)}
+                                className="p-1.5 rounded-lg bg-white/90 text-blue-700 hover:bg-white transition"
+                                title="Replace Photo"
+                              >
+                                <RotateCcw className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveAttachment(idx)}
+                                className="p-1.5 rounded-lg bg-white/90 text-rose-600 hover:bg-white transition"
+                                title="Delete Evidence"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="p-4 bg-slate-50 flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                              <Paperclip className="w-5 h-5" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-slate-800 truncate">{att.originalName}</p>
+                              <span className="text-[10px] text-slate-400">PDF Document</span>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="p-2.5 border-t border-slate-100 flex items-center justify-between text-xs bg-white">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-800 truncate text-[11px] max-w-[140px]">
+                              {att.originalName}
+                            </p>
+                            <span className="text-[10px] text-slate-400">
+                              {(att.fileSizeBytes / 1024).toFixed(1)} KB
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => triggerReplace(idx)}
+                              className="p-1 text-slate-500 hover:text-blue-600 rounded transition"
+                              title="Replace file"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveAttachment(idx)}
+                              className="p-1 text-slate-500 hover:text-rose-600 rounded transition"
+                              title="Remove file"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-6 text-center border-2 border-dashed border-slate-200 rounded-xl bg-white hover:border-blue-400 hover:bg-blue-50/20 cursor-pointer transition"
+                >
+                  <ImageIcon className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                  <p className="text-xs font-bold text-slate-700">Click to attach photo evidence or documentation</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">High-resolution photos accelerate departmental verification.</p>
                 </div>
               )}
             </div>
@@ -618,6 +829,27 @@ export const NewGrievancePage: React.FC = () => {
           </form>
         </CardContent>
       </Card>
+
+      {/* Image Preview Modal */}
+      {previewModalImg && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl">
+            <div className="p-3 border-b border-slate-200 flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-800 truncate">{previewModalImg.title}</span>
+              <button
+                type="button"
+                onClick={() => setPreviewModalImg(null)}
+                className="p-1 rounded-lg text-slate-500 hover:bg-slate-100 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4 bg-slate-950 flex items-center justify-center max-h-[70vh] overflow-auto">
+              <img src={previewModalImg.url} alt={previewModalImg.title} className="max-h-[65vh] object-contain rounded-lg" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

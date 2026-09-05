@@ -5,6 +5,14 @@ import { ApiResponse } from "../utils/apiResponse";
 import { ApiError } from "../utils/apiError";
 import { AuthenticatedRequest } from "../types";
 import { ApplicationStatus, NotificationType, StorageProvider } from "@prisma/client";
+import {
+  SERVICE_REGISTRY,
+  SERVICE_CATEGORIES,
+  getServiceSchema,
+  searchServices,
+  validateServiceApplicationPayload,
+} from "../config/serviceSchemaRegistry";
+import { searchSchemes, SCHEME_REGISTRY } from "../config/schemeRegistry";
 
 // Input Validation Schemas
 export const submitServiceApplicationSchema = z.object({
@@ -119,6 +127,20 @@ export class ServiceController {
   }
 
   /**
+   * GET /api/v1/services/:id/requirements
+   * Get dynamic schema requirements, conditional fields, documents, and declaration
+   */
+  async getServiceRequirements(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const schema = getServiceSchema(id);
+      ApiResponse.success(res, schema, "Service requirements and schema loaded");
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * POST /api/v1/services/:serviceId/apply
    * Submit an application for a government service with documents and form payload
    */
@@ -139,6 +161,25 @@ export class ServiceController {
 
       if (!service.isActive) {
         throw ApiError.badRequest("This government service is currently inactive");
+      }
+
+      // Validate against schema registry if final submission
+      if (!isDraft) {
+        const schema = getServiceSchema(service.code);
+        if (schema) {
+          const validation = validateServiceApplicationPayload(schema, formData || {}, documents || []);
+          if (!validation.isValid) {
+            res.status(422).json({
+              success: false,
+              message: "Application validation failed. Please provide all mandatory fields and required documents.",
+              errors: {
+                missingFields: validation.missingFields,
+                missingDocs: validation.missingDocs,
+              },
+            });
+            return;
+          }
+        }
       }
 
       // Generate human-readable reference token (e.g. SETU-SRV-2026-104928)
@@ -361,6 +402,48 @@ export class ServiceController {
       });
 
       ApiResponse.success(res, updated, `Application status updated to ${status}`);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/v1/services/catalog/categorized
+   * Returns categorized services with 16 core citizen categories
+   */
+  async getServiceCatalog(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { category, search } = req.query;
+      const services = searchServices(search as string, category as string);
+      
+      ApiResponse.success(res, {
+        services,
+        categories: SERVICE_CATEGORIES,
+        totalCount: services.length,
+      }, "Service catalog retrieved successfully");
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/v1/services/global/search
+   * Unified global search across both Government Services and Government Schemes
+   */
+  async globalSearch(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { q } = req.query;
+      const queryStr = (q as string || "").trim();
+
+      const matchedServices = searchServices(queryStr);
+      const matchedSchemes = searchSchemes(queryStr);
+
+      ApiResponse.success(res, {
+        query: queryStr,
+        services: matchedServices,
+        schemes: matchedSchemes,
+        totalResults: matchedServices.length + matchedSchemes.length,
+      }, "Global citizen search completed");
     } catch (error) {
       next(error);
     }

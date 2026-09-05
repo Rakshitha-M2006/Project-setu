@@ -4,6 +4,7 @@ import Header from "../common/Header";
 import Footer from "../common/Footer";
 import ToastContainer from "../ui/Toast";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Inbox,
   Clock,
@@ -14,12 +15,13 @@ import { cn } from "../../utils/cn";
 
 export const OfficerLayout: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const location = useLocation();
 
   const navItems = [
-    { label: "Officer Dashboard", path: "/officer/dashboard", icon: <Inbox className="w-4 h-4" /> },
-    { label: "Grievances Queue", path: "/officer/grievances", icon: <Clock className="w-4 h-4" /> },
-    { label: "My Profile & Duty", path: "/officer/profile", icon: <Shield className="w-4 h-4" /> },
+    { label: t("officer.dashboardTitle") || "Officer Dashboard", path: "/officer/dashboard", icon: <Inbox className="w-4 h-4" /> },
+    { label: t("officer.assignedComplaints") || "Grievances Queue", path: "/officer/grievances", icon: <Clock className="w-4 h-4" /> },
+    { label: t("common.profile") || "My Profile & Duty", path: "/officer/profile", icon: <Shield className="w-4 h-4" /> },
   ];
 
   return (
@@ -36,7 +38,7 @@ export const OfficerLayout: React.FC = () => {
             <div>
               <p className="text-xs font-bold leading-none">{user?.fullName}</p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Field Officer • {user?.officerProfile?.department?.name || "General Administration"}
+                {t("officer.dashboardTitle") || "Field Officer"} • {user?.officerProfile?.department?.name || "General Administration"}
               </p>
             </div>
           </div>
@@ -45,9 +47,9 @@ export const OfficerLayout: React.FC = () => {
             <span className="bg-blue-950 border border-blue-800 text-blue-300 px-2.5 py-1 rounded font-mono">
               Badge: {user?.officerProfile?.badgeNumber || "SETU-OFF-01"}
             </span>
-            <span className="flex items-center gap-1.5 text-emerald-400">
+            <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              Duty Active
+              {t("common.statusActive") || "Duty Active"}
             </span>
           </div>
         </div>
@@ -59,10 +61,12 @@ export const OfficerLayout: React.FC = () => {
           <aside className="lg:col-span-1 space-y-4">
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-1">
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 pb-2 border-b border-slate-100">
-                Officer Workbench
+                {t("navigation.officerWorkbench") || "Officer Workbench"}
               </p>
               {navItems.map((item) => {
-                const isActive = location.pathname === item.path;
+                const isActive =
+                  location.pathname === item.path ||
+                  (item.path === "/officer/dashboard" && location.pathname === "/officer");
                 return (
                   <Link
                     key={item.path}
@@ -70,7 +74,7 @@ export const OfficerLayout: React.FC = () => {
                     className={cn(
                       "flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition",
                       isActive
-                        ? "bg-slate-900 text-white shadow-sm"
+                        ? "bg-slate-900 text-white shadow-sm font-bold"
                         : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                     )}
                   >
@@ -84,11 +88,11 @@ export const OfficerLayout: React.FC = () => {
             <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-4 text-xs space-y-2">
               <p className="font-bold flex items-center gap-1.5 text-amber-800">
                 <AlertTriangle className="w-4 h-4" />
-                <span>SLA Policy Directive</span>
+                <span>{t("home.metrics.slaTimeLabel") || "SLA Policy Directive"}</span>
               </p>
               <p className="text-amber-800/90 leading-relaxed text-[11px]">
-                Complaints marked High Priority must have action updates logged within 24 hours to prevent Level-1
-                automatic escalation.
+                {t("officer.dashboardSubtitle") ||
+                  "Complaints marked High Priority must have action updates logged within 24 hours to prevent Level-1 automatic escalation."}
               </p>
             </div>
           </aside>

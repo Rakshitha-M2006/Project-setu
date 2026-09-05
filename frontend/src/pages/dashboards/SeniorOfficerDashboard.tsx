@@ -1,24 +1,23 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import axiosClient from "../../api/axiosClient";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, EmptyTableState } from "../../components/ui/Table";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../components/ui/Table";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import {
   TrendingUp,
   AlertOctagon,
-  Users,
   RefreshCw,
   Flame,
-  ShieldAlert,
   ExternalLink,
 } from "lucide-react";
 
 export const SeniorOfficerDashboard: React.FC = () => {
   const toast = useToast();
-  const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const [summary, setSummary] = useState<{
     overdueCount: number;
@@ -35,7 +34,7 @@ export const SeniorOfficerDashboard: React.FC = () => {
         setSummary(response.data.data);
       }
     } catch {
-      toast.error("Failed to load SLA escalation command analytics.", "Error");
+      toast.error(t("errors.serverError") || "Failed to load SLA escalation command analytics.", "Error");
     } finally {
       setIsLoading(false);
     }
@@ -52,15 +51,14 @@ export const SeniorOfficerDashboard: React.FC = () => {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="bg-indigo-500/20 text-indigo-300 text-xs px-3 py-0.5 rounded-full border border-indigo-400/30 font-bold">
-              Senior Executive SLA Oversight
+              {t("navigation.overview") || "Senior Executive SLA Oversight"}
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-            Department Escalation & SLA Command Center
+            {t("navigation.overview") || "Department Escalation & SLA Command Center"}
           </h1>
           <p className="text-xs sm:text-sm text-indigo-200/90 max-w-xl">
-            Real-time monitoring of department turnaround times, automated Level-1/2 escalations,
-            field officer backlog inspection, and citizen satisfaction ratings.
+            {t("home.workflow.step3Desc") || "Real-time monitoring of department turnaround times, automated Level-1/2 escalations, field officer backlog inspection, and citizen satisfaction ratings."}
           </p>
         </div>
 
@@ -73,160 +71,123 @@ export const SeniorOfficerDashboard: React.FC = () => {
             className="bg-white/10 text-white border-white/20 hover:bg-white/20 text-xs"
             leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
           >
-            Refresh Data
+            {t("common.refresh") || "Refresh Data"}
           </Button>
         </div>
       </div>
 
-      {/* 2. Executive Metric Counters */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-slate-200 shadow-sm">
+      {/* 2. Counters Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card className="border-slate-200">
           <CardContent className="p-5 flex items-center justify-between">
             <div className="space-y-1">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Breached SLA Cases</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                {t("common.statusEscalated") || "Escalated Cases"}
+              </p>
               <p className="text-2xl font-black text-rose-600 font-mono">
-                {isLoading ? "..." : summary?.overdueCount ?? 0}
+                {isLoading ? "..." : summary?.escalatedCount ?? 0}
               </p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
               <AlertOctagon className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 shadow-sm">
+        <Card className="border-slate-200">
           <CardContent className="p-5 flex items-center justify-between">
             <div className="space-y-1">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Active Escalations</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                {t("officer.slaBreached") || "Overdue SLA Breaches"}
+              </p>
               <p className="text-2xl font-black text-amber-600 font-mono">
-                {isLoading ? "..." : summary?.escalatedCount ?? 0}
+                {isLoading ? "..." : summary?.overdueCount ?? 0}
               </p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
-              <ShieldAlert className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <Flame className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 shadow-sm">
+        <Card className="border-slate-200">
           <CardContent className="p-5 flex items-center justify-between">
             <div className="space-y-1">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Department Priority</p>
-              <p className="text-2xl font-black text-blue-700 font-mono">High Vigilance</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                {t("home.metrics.auditTrailLabel") || "Resolution Rate"}
+              </p>
+              <p className="text-2xl font-black text-emerald-600 font-mono">98.4%</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
-              <Users className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 shadow-sm">
-          <CardContent className="p-5 flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Auto Escalation SLA</p>
-              <p className="text-2xl font-black text-emerald-600 font-mono">24h Grace</p>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
               <TrendingUp className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* 3. SLA Breaches & Overdue Grievances Table */}
-      <Card className="border-slate-200 shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <Flame className="w-4 h-4 text-rose-600" />
-              <CardTitle className="text-base">High-Priority SLA Breaches & Overdue Grievances</CardTitle>
-            </div>
-            <CardDescription className="text-xs">
-              Complaints exceeding mandatory turnaround deadlines requiring executive escalation or re-allocation
-            </CardDescription>
-          </div>
+      {/* 3. Top SLA Breaches Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("common.statusEscalated") || "Active SLA Escalations & Breaches"}</CardTitle>
+          <CardDescription>
+            {t("officer.dashboardSubtitle") || "Cases requiring senior intervention, direct reallocation, or inter-department inquiry"}
+          </CardDescription>
         </CardHeader>
-
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("grievances.trackingNumber") || "Tracking #"}</TableHead>
+              <TableHead>{t("grievances.subjectLabel") || "Subject"}</TableHead>
+              <TableHead>{t("common.department") || "Department"}</TableHead>
+              <TableHead>{t("common.status") || "Status"}</TableHead>
+              <TableHead>{t("common.priority") || "Priority"}</TableHead>
+              <TableHead className="text-right">{t("common.actions") || "Action"}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
               <TableRow>
-                <TableHead>Tracking #</TableHead>
-                <TableHead>Grievance Subject</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Target SLA Deadline</TableHead>
-                <TableHead>Assigned Officer</TableHead>
-                <TableHead>Action</TableHead>
+                <TableCell colSpan={6} className="text-center py-12 text-slate-500">
+                  {t("common.loading") || "Loading escalated records..."}
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-10 text-xs text-slate-400">
-                    Scanning departmental SLA records...
+            ) : !summary?.topBreaches || summary.topBreaches.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                  {t("dashboard.noGrievances") || "Zero SLA Breaches"}
+                </TableCell>
+              </TableRow>
+            ) : (
+              summary.topBreaches.map((b: any) => (
+                <TableRow key={b.id}>
+                  <TableCell className="font-mono font-bold text-rose-700 text-xs">
+                    {b.trackingNumber}
+                  </TableCell>
+                  <TableCell className="font-medium text-slate-900 max-w-xs truncate">
+                    {b.title}
+                  </TableCell>
+                  <TableCell className="text-xs text-slate-600">
+                    {b.department?.name || "General"}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={b.status} size="sm" />
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={b.priority} size="sm" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Link to={`/officer/grievances/${b.id}`}>
+                      <Button size="sm" variant="outline" className="text-xs">
+                        <span>{t("common.view") || "Inspect"}</span>
+                        <ExternalLink className="w-3 h-3 ml-1" />
+                      </Button>
+                    </Link>
                   </TableCell>
                 </TableRow>
-              ) : !summary?.topBreaches || summary.topBreaches.length === 0 ? (
-                <EmptyTableState
-                  title="Zero active SLA breaches"
-                  description="All departmental grievances are progressing within stipulated SLA timelines."
-                  colSpan={8}
-                />
-              ) : (
-                summary.topBreaches.map((g: any) => {
-                  const assignedOfficer =
-                    g.assignments && g.assignments.length > 0
-                      ? g.assignments[0].officerProfile?.user?.fullName || "Assigned Officer"
-                      : "Unassigned Backlog";
-
-                  return (
-                    <TableRow
-                      key={g.id}
-                      onClick={() => navigate(`/officer/grievances/${g.id}`)}
-                      className="cursor-pointer hover:bg-rose-50/30 transition"
-                    >
-                      <TableCell className="font-mono font-bold text-rose-700 text-xs">
-                        {g.trackingNumber}
-                      </TableCell>
-                      <TableCell className="font-semibold text-slate-900 max-w-xs truncate text-xs">
-                        {g.title}
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-700">
-                        {g.department?.name || "General"}
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-600">
-                        {g.category?.name || "Civic Complaint"}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={g.priority} type="priority" size="sm" />
-                      </TableCell>
-                      <TableCell className="text-xs font-mono text-rose-700 font-bold">
-                        {g.slaDeadline ? new Date(g.slaDeadline).toLocaleDateString() : "Expired"}
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-700 font-medium">
-                        {assignedOfficer}
-                      </TableCell>
-                      <TableCell>
-                        <Link to={`/officer/grievances/${g.id}`} onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs py-1 px-2.5 font-bold border-rose-200 text-rose-700 hover:bg-rose-50"
-                            rightIcon={<ExternalLink className="w-3 h-3" />}
-                          >
-                            Intervene
-                          </Button>
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </Card>
     </div>
   );

@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { StatusBadge } from "../ui/StatusBadge";
+import LanguageSelectorDropdown from "./LanguageSelectorDropdown";
+import NotificationDropdown from "./NotificationDropdown";
 import {
   Landmark,
   LogOut,
@@ -9,11 +12,11 @@ import {
   X,
   FileText,
   Home,
-  Bell,
 } from "lucide-react";
 
 export const Header: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -50,12 +53,12 @@ export const Header: React.FC = () => {
       {/* 2. Top Accessibility & Official Govt Strip */}
       <div className="bg-slate-900 text-slate-300 text-[11px] py-1 px-4 sm:px-8 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-white tracking-wider">भारत सरकार | GOVERNMENT OF INDIA</span>
+          <span className="font-semibold text-white tracking-wider">{t("common.govtOfIndia")}</span>
           <span className="hidden md:inline text-slate-500">•</span>
-          <span className="hidden md:inline text-slate-400">Ministry of Electronics & Information Technology</span>
+          <span className="hidden md:inline text-slate-400">{t("common.ministry")}</span>
         </div>
         <div className="flex items-center gap-4 text-slate-300">
-          <span>National Grievance Helpline: 1800-11-7388</span>
+          <span>{t("common.helpline")}</span>
         </div>
       </div>
 
@@ -70,27 +73,30 @@ export const Header: React.FC = () => {
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight font-serif">
-                  PROJECT SETU
+                  {t("common.appName")}
                 </span>
                 <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-200">
                   AI-GOV
                 </span>
               </div>
               <span className="text-[10px] sm:text-xs text-slate-500 font-medium">
-                Unified Citizen Grievance & Public Service Platform
+                {t("common.appTagline")}
               </span>
             </div>
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden md:flex items-center gap-4 lg:gap-6">
             <Link
               to="/"
               className="text-sm font-medium text-slate-700 hover:text-blue-700 transition flex items-center gap-1.5"
             >
               <Home className="w-4 h-4" />
-              <span>Home</span>
+              <span>{t("common.home")}</span>
             </Link>
+
+            {/* Language Selector Dropdown */}
+            <LanguageSelectorDropdown variant="header" />
 
             {isAuthenticated ? (
               <>
@@ -99,16 +105,10 @@ export const Header: React.FC = () => {
                   className="text-sm font-semibold text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200/60 hover:bg-blue-100 transition flex items-center gap-1.5"
                 >
                   <FileText className="w-4 h-4" />
-                  <span>Workbench Portal</span>
+                  <span>{t("common.workbench")}</span>
                 </Link>
 
-                <Link
-                  to="/citizen/notifications"
-                  className="p-2 rounded-lg text-slate-600 hover:text-blue-700 hover:bg-blue-50 border border-slate-200 transition relative"
-                  title="Notifications Center"
-                >
-                  <Bell className="w-4 h-4" />
-                </Link>
+                <NotificationDropdown />
 
                 <div className="h-5 w-px bg-slate-200" />
 
@@ -124,7 +124,7 @@ export const Header: React.FC = () => {
                   <button
                     onClick={handleLogout}
                     className="p-2 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 transition"
-                    title="Sign Out"
+                    title={t("common.signOut")}
                   >
                     <LogOut className="w-4 h-4" />
                   </button>
@@ -136,20 +136,22 @@ export const Header: React.FC = () => {
                   to="/login"
                   className="text-sm font-semibold text-slate-700 hover:text-blue-700 px-3 py-2 rounded-lg transition"
                 >
-                  Official Sign In
+                  {t("common.signIn")}
                 </Link>
                 <Link
                   to="/register"
                   className="text-sm font-semibold bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow-sm transition active:scale-[0.98]"
                 >
-                  Citizen Register
+                  {t("common.register")}
                 </Link>
               </div>
             )}
           </nav>
 
-          {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center">
+          {/* Mobile Menu Button & Language */}
+          <div className="md:hidden flex items-center gap-2">
+            {isAuthenticated && <NotificationDropdown />}
+            <LanguageSelectorDropdown variant="header" />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-lg text-slate-700 hover:bg-slate-100 focus:outline-none"
@@ -168,7 +170,7 @@ export const Header: React.FC = () => {
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
-            Home
+            {t("common.home")}
           </Link>
 
           {isAuthenticated ? (
@@ -186,7 +188,7 @@ export const Header: React.FC = () => {
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 rounded-lg text-sm font-semibold text-blue-700 bg-blue-50"
               >
-                Go to Dashboard
+                {t("common.workbench")}
               </Link>
 
               <button
@@ -197,7 +199,7 @@ export const Header: React.FC = () => {
                 className="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2"
               >
                 <LogOut className="w-4 h-4" />
-                <span>Sign Out</span>
+                <span>{t("common.signOut")}</span>
               </button>
             </div>
           ) : (
@@ -207,14 +209,14 @@ export const Header: React.FC = () => {
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full text-center px-4 py-2.5 rounded-lg border border-slate-300 text-sm font-semibold text-slate-700"
               >
-                Sign In
+                {t("common.signIn")}
               </Link>
               <Link
                 to="/register"
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full text-center px-4 py-2.5 rounded-lg bg-blue-700 text-white text-sm font-semibold shadow-sm"
               >
-                Citizen Register
+                {t("common.register")}
               </Link>
             </div>
           )}

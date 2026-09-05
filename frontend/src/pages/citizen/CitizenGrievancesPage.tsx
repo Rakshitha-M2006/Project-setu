@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import citizenApi, { GrievanceItem } from "../../api/citizenApi";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, EmptyTableState } from "../../components/ui/Table";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../components/ui/Table";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { Input } from "../../components/ui/Input";
 import {
@@ -17,6 +18,7 @@ import {
 export const CitizenGrievancesPage: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
+  const { t } = useLanguage();
 
   const [grievances, setGrievances] = useState<GrievanceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,8 +32,8 @@ export const CitizenGrievancesPage: React.FC = () => {
       if (response.success && response.data) {
         setGrievances(response.data);
       }
-    } catch (err: any) {
-      toast.error("Failed to load grievances.", "Error");
+    } catch {
+      toast.error(t("errors.serverError") || "Failed to load grievances.", "Error");
     } finally {
       setIsLoading(false);
     }
@@ -43,7 +45,6 @@ export const CitizenGrievancesPage: React.FC = () => {
 
   const filteredGrievances = useMemo(() => {
     return grievances.filter((g) => {
-      // 1. Status Filter Tab
       let matchesTab = true;
       if (activeTab === "PENDING") {
         matchesTab =
@@ -65,7 +66,6 @@ export const CitizenGrievancesPage: React.FC = () => {
         matchesTab = g.status === "ESCALATED";
       }
 
-      // 2. Search Query Filter
       let matchesSearch = true;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -99,23 +99,21 @@ export const CitizenGrievancesPage: React.FC = () => {
           g.status === "IN_PROGRESS" ||
           g.status === "UNDER_INSPECTION"
       ).length;
-    if (statusType === "RESOLVED")
-      return grievances.filter((g) => g.status === "RESOLVED").length;
-    if (statusType === "ESCALATED")
-      return grievances.filter((g) => g.status === "ESCALATED").length;
+    if (statusType === "RESOLVED") return grievances.filter((g) => g.status === "RESOLVED").length;
+    if (statusType === "ESCALATED") return grievances.filter((g) => g.status === "ESCALATED").length;
     return 0;
   };
 
   return (
     <div className="space-y-6">
-      {/* 1. Header Bar */}
+      {/* 1. Header Banner */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            My Public Grievances
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+            {t("grievances.myGrievances") || "My Public Grievances"}
           </h1>
-          <p className="text-xs text-slate-500">
-            Track and monitor the status of all complaints submitted by you
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            {t("grievances.myGrievancesSubtitle") || "Track and monitor the status of all complaints submitted by you"}
           </p>
         </div>
 
@@ -127,147 +125,129 @@ export const CitizenGrievancesPage: React.FC = () => {
             isLoading={isLoading}
             leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
           >
-            Refresh
+            {t("common.refresh") || "Refresh"}
           </Button>
 
           <Link to="/citizen/grievances/new">
-            <Button size="sm" className="bg-blue-700 hover:bg-blue-800 text-white font-bold" leftIcon={<FilePlus className="w-4 h-4" />}>
-              Lodge Grievance
+            <Button size="sm" leftIcon={<FilePlus className="w-4 h-4" />}>
+              {t("navigation.newLodgeIssue") || "Lodge New Issue"}
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* 2. Filter Tabs & Search Toolbar */}
-      <Card className="border-slate-200 shadow-sm">
+      {/* 2. Filter Tabs & Search */}
+      <Card>
         <CardContent className="p-4 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            {/* Filter Tabs */}
-            <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-medium">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-2">
               {[
-                { id: "ALL", label: "All Grievances" },
-                { id: "PENDING", label: "Pending Triage" },
-                { id: "IN_PROGRESS", label: "In Progress" },
-                { id: "RESOLVED", label: "Resolved" },
-                { id: "ESCALATED", label: "Escalated" },
-              ].map((tab) => {
-                const count = getStatusCount(tab.id);
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                      isActive
-                        ? "bg-white text-blue-700 font-bold shadow-sm"
-                        : "text-slate-600 hover:text-slate-900"
+                { id: "ALL", label: t("common.all") || "All" },
+                { id: "PENDING", label: t("dashboard.pendingGrievances") || "Under Review" },
+                { id: "IN_PROGRESS", label: t("dashboard.inProgressGrievances") || "In Progress" },
+                { id: "RESOLVED", label: t("dashboard.resolvedGrievances") || "Resolved" },
+                { id: "ESCALATED", label: t("common.statusEscalated") || "Escalated" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+                    activeTab === tab.id
+                      ? "bg-blue-700 text-white shadow-sm"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                      activeTab === tab.id ? "bg-blue-800 text-white" : "bg-slate-200 text-slate-700"
                     }`}
                   >
-                    <span>{tab.label}</span>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                        isActive ? "bg-blue-100 text-blue-800" : "bg-slate-200 text-slate-600"
-                      }`}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
+                    {getStatusCount(tab.id)}
+                  </span>
+                </button>
+              ))}
             </div>
 
-            {/* Search Input */}
-            <div className="w-full sm:w-72">
+            <div className="w-full md:w-72">
               <Input
-                placeholder="Search tracking #, title..."
+                placeholder={t("common.search") + "..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-                className="py-1.5 text-xs"
+                leftIcon={<Search className="w-4 h-4 text-slate-400" />}
               />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* 3. Grievances List Table */}
-      <Card className="border-slate-200 shadow-sm">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
+      {/* 3. Grievances Table */}
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("grievances.trackingNumber") || "Tracking #"}</TableHead>
+              <TableHead>{t("grievances.subjectLabel") || "Subject"}</TableHead>
+              <TableHead>{t("common.department") || "Department"}</TableHead>
+              <TableHead>{t("common.status") || "Status"}</TableHead>
+              <TableHead>{t("common.priority") || "Priority"}</TableHead>
+              <TableHead>{t("common.date") || "Date"}</TableHead>
+              <TableHead className="text-right">{t("common.actions") || "Action"}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
               <TableRow>
-                <TableHead>Tracking #</TableHead>
-                <TableHead>Subject Title</TableHead>
-                <TableHead>Governing Department</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Lodged On</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableCell colSpan={7} className="text-center py-12 text-slate-500">
+                  {t("common.loading") || "Loading grievances..."}
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-xs text-slate-400">
-                    Loading citizen grievances...
+            ) : filteredGrievances.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7}>
+                  <div className="p-8 text-center space-y-3">
+                    <p className="font-bold text-slate-700">{t("dashboard.noGrievances") || "No grievances found"}</p>
+                    <p className="text-xs text-slate-500">{t("dashboard.noGrievancesDesc") || "You have not lodged any grievances in this filter."}</p>
+                    <Button size="sm" onClick={() => navigate("/citizen/grievances/new")}>
+                      {t("dashboard.lodgeGrievanceBtn") || "Lodge New Grievance"}
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredGrievances.map((g) => (
+                <TableRow key={g.id} className="hover:bg-slate-50/80 transition">
+                  <TableCell className="font-mono font-bold text-blue-700 text-xs">
+                    {g.trackingNumber}
+                  </TableCell>
+                  <TableCell className="font-medium text-slate-900 max-w-xs truncate">
+                    {g.title}
+                  </TableCell>
+                  <TableCell className="text-slate-600 text-xs">
+                    {g.department?.name || "AI Routing..."}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={g.status} size="sm" />
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={g.priority} size="sm" />
+                  </TableCell>
+                  <TableCell className="text-slate-500 text-xs">
+                    {new Date(g.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Link to={`/citizen/grievances/${g.id}`}>
+                      <Button variant="ghost" size="sm" className="text-xs text-blue-700">
+                        <span>{t("common.view") || "View"}</span>
+                        <ExternalLink className="w-3 h-3 ml-1" />
+                      </Button>
+                    </Link>
                   </TableCell>
                 </TableRow>
-              ) : filteredGrievances.length === 0 ? (
-                <EmptyTableState
-                  title="No grievances found"
-                  description={
-                    searchQuery
-                      ? "No records match your search query."
-                      : "You have no complaints under this filter category."
-                  }
-                  colSpan={7}
-                />
-              ) : (
-                filteredGrievances.map((g) => (
-                  <TableRow
-                    key={g.id}
-                    onClick={() => navigate(`/citizen/grievances/${g.id}`)}
-                    className="cursor-pointer hover:bg-blue-50/40 transition"
-                  >
-                    <TableCell className="font-mono font-bold text-blue-700 text-xs">
-                      {g.trackingNumber}
-                    </TableCell>
-                    <TableCell className="font-semibold text-slate-900 max-w-xs truncate">
-                      {g.title}
-                    </TableCell>
-                    <TableCell className="text-xs text-slate-600">
-                      {g.department?.name || "General Administration"}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={g.priority} type="priority" size="sm" />
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={g.status} size="sm" />
-                    </TableCell>
-                    <TableCell className="text-xs text-slate-500 font-mono">
-                      {new Date(g.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <Link
-                        to={`/citizen/grievances/${g.id}`}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-xs py-1 px-2.5"
-                          rightIcon={<ExternalLink className="w-3 h-3" />}
-                        >
-                          Track
-                        </Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </Card>
     </div>
   );

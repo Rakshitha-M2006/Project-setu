@@ -106,14 +106,18 @@ export class UserRepository extends BaseRepository {
       cleanPhone = `+91${cleanPhone}`;
     }
 
+    const addr1 = (input.addressLine1 || "Residential Address").trim();
+    const userCity = (input.city || "District Center").trim();
+    const userState = (input.state || "State").trim();
+
     // Find or create matching Location for state, city, and pincode
     let locationId = input.locationId || null;
-    if (!locationId && input.city && input.state && input.pincode) {
+    if (!locationId && userCity && userState && input.pincode) {
       try {
         const existingLoc = await this.db.location.findFirst({
           where: {
-            state: input.state.trim(),
-            district: input.city.trim(),
+            state: userState,
+            district: userCity,
             pincode: input.pincode.trim(),
           },
         });
@@ -123,9 +127,9 @@ export class UserRepository extends BaseRepository {
         } else {
           const newLoc = await this.db.location.create({
             data: {
-              state: input.state.trim(),
-              district: input.city.trim(),
-              locality: input.addressLine1.trim(),
+              state: userState,
+              district: userCity,
+              locality: addr1,
               pincode: input.pincode.trim(),
             },
           });
@@ -149,8 +153,8 @@ export class UserRepository extends BaseRepository {
             aadhaarHash: input.aadhaarHash || null,
             gender: input.gender || null,
             dateOfBirth: input.dateOfBirth ? new Date(input.dateOfBirth) : null,
-            addressLine1: input.addressLine1.trim(),
-            addressLine2: input.addressLine2?.trim() || `${input.city.trim()}, ${input.state.trim()}`,
+            addressLine1: addr1,
+            addressLine2: input.addressLine2?.trim() || `${userCity}, ${userState}`,
             pincode: input.pincode.trim(),
             locationId: locationId,
             occupation: input.occupation?.trim() || null,

@@ -1,83 +1,69 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import citizenApi, { ServiceApplicationItem } from "../../api/citizenApi";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
-import { Input } from "../../components/ui/Input";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, EmptyTableState } from "../../components/ui/Table";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../components/ui/Table";
 import { StatusBadge } from "../../components/ui/StatusBadge";
+import { Input } from "../../components/ui/Input";
 import {
-  PlusCircle,
-  RefreshCw,
+  Briefcase,
   Search,
+  RefreshCw,
   ExternalLink,
 } from "lucide-react";
 
 export const CitizenApplicationsPage: React.FC = () => {
-  const toast = useToast();
   const navigate = useNavigate();
+  const toast = useToast();
+  const { t } = useLanguage();
 
   const [applications, setApplications] = useState<ServiceApplicationItem[]>([]);
-  const [activeTab, setActiveTab] = useState<string>("ALL");
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const loadData = async () => {
+  const loadApplications = async () => {
     setIsLoading(true);
     try {
       const response = await citizenApi.getMyApplications();
       if (response.success && response.data) {
         setApplications(response.data);
-      } else {
-        toast.error("Failed to load service applications.", "Error");
       }
     } catch {
-      toast.error("Network error retrieving service applications.", "Connection Error");
+      toast.error(t("errors.serverError") || "Failed to load applications.", "Error");
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
+    loadApplications();
   }, []);
 
   const filteredApps = useMemo(() => {
     return applications.filter((app) => {
-      let matchesTab = true;
-      if (activeTab !== "ALL") {
-        matchesTab = app.status === activeTab;
-      }
-
-      let matchesSearch = true;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        matchesSearch =
-          app.applicationNumber.toLowerCase().includes(q) ||
-          (app.service?.name || "").toLowerCase().includes(q) ||
-          (app.department?.name || "").toLowerCase().includes(q);
-      }
-
-      return matchesTab && matchesSearch;
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        app.applicationNumber.toLowerCase().includes(q) ||
+        (app.service?.name || "").toLowerCase().includes(q) ||
+        (app.service?.department?.name || "").toLowerCase().includes(q)
+      );
     });
-  }, [applications, activeTab, searchQuery]);
-
-  const getStatusCount = (status: string) => {
-    if (status === "ALL") return applications.length;
-    return applications.filter((a) => a.status === status).length;
-  };
+  }, [applications, searchQuery]);
 
   return (
     <div className="space-y-6">
-      {/* 1. Header Toolbar */}
+      {/* 1. Header Banner */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            My Government Service Applications
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+            {t("applications.title") || "My Government Service Applications"}
           </h1>
-          <p className="text-xs text-slate-500">
-            Track statutory verification progress and download official permits / sanction certificates
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            {t("applications.subtitle") || "Track statutory verification progress and download official permits / sanction certificates"}
           </p>
         </div>
 
@@ -85,153 +71,101 @@ export const CitizenApplicationsPage: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={loadData}
+            onClick={loadApplications}
             isLoading={isLoading}
             leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
           >
-            Refresh
+            {t("common.refresh") || "Refresh"}
           </Button>
 
           <Link to="/citizen/services">
-            <Button
-              size="sm"
-              className="bg-blue-700 hover:bg-blue-800 text-white font-bold"
-              leftIcon={<PlusCircle className="w-4 h-4" />}
-            >
-              Browse Services Catalog
+            <Button size="sm" leftIcon={<Briefcase className="w-4 h-4" />}>
+              {t("navigation.services") || "Browse Services"}
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* 2. Filter Tabs & Search Toolbar */}
-      <Card className="border-slate-200 shadow-sm">
-        <CardContent className="p-4 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            {/* Filter Tabs */}
-            <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-medium">
-              {[
-                { id: "ALL", label: "All Applications" },
-                { id: "SUBMITTED", label: "Submitted" },
-                { id: "DOCUMENT_VERIFICATION", label: "Verification" },
-                { id: "UNDER_REVIEW", label: "Under Review" },
-                { id: "APPROVED", label: "Approved" },
-                { id: "COMPLETED", label: "Completed" },
-              ].map((tab) => {
-                const count = getStatusCount(tab.id);
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                      isActive
-                        ? "bg-white text-blue-700 font-bold shadow-sm"
-                        : "text-slate-600 hover:text-slate-900"
-                    }`}
-                  >
-                    <span>{tab.label}</span>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                        isActive ? "bg-blue-100 text-blue-800" : "bg-slate-200 text-slate-600"
-                      }`}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Search Input */}
-            <div className="w-full sm:w-72">
-              <Input
-                placeholder="Search application #, service..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-                className="py-1.5 text-xs"
-              />
-            </div>
+      {/* 2. Search & Filter */}
+      <Card>
+        <CardContent className="p-4 flex items-center justify-between gap-4">
+          <div className="w-full sm:w-80">
+            <Input
+              placeholder={t("common.search") + "..."}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              leftIcon={<Search className="w-4 h-4 text-slate-400" />}
+            />
           </div>
+          <span className="text-xs font-semibold text-slate-500">
+            {filteredApps.length} {t("common.statusActive") || "Applications"}
+          </span>
         </CardContent>
       </Card>
 
       {/* 3. Applications Table */}
-      <Card className="border-slate-200 shadow-sm">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("applications.applicationNumber") || "Application #"}</TableHead>
+              <TableHead>{t("applications.serviceName") || "Service Name"}</TableHead>
+              <TableHead>{t("applications.department") || "Department"}</TableHead>
+              <TableHead>{t("applications.status") || "Status"}</TableHead>
+              <TableHead>{t("applications.submittedOn") || "Submitted On"}</TableHead>
+              <TableHead className="text-right">{t("common.actions") || "Action"}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
               <TableRow>
-                <TableHead>Application #</TableHead>
-                <TableHead>Government Service</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Submitted On</TableHead>
-                <TableHead>Documents Attached</TableHead>
-                <TableHead>Action</TableHead>
+                <TableCell colSpan={6} className="text-center py-12 text-slate-500">
+                  {t("common.loading") || "Loading applications..."}
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-xs text-slate-400">
-                    Loading your service applications...
+            ) : filteredApps.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6}>
+                  <div className="p-8 text-center space-y-3">
+                    <p className="font-bold text-slate-700">{t("applications.noApplications") || "No applications found"}</p>
+                    <p className="text-xs text-slate-500">{t("applications.noApplicationsDesc") || "You have not submitted any service applications yet."}</p>
+                    <Button size="sm" onClick={() => navigate("/citizen/services")}>
+                      {t("dashboard.applyServiceBtn") || "Apply for Government Service"}
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredApps.map((app) => (
+                <TableRow key={app.id} className="hover:bg-slate-50/80 transition">
+                  <TableCell className="font-mono font-bold text-blue-700 text-xs">
+                    {app.applicationNumber}
+                  </TableCell>
+                  <TableCell className="font-medium text-slate-900">
+                    {app.service?.name}
+                  </TableCell>
+                  <TableCell className="text-slate-600 text-xs">
+                    {app.service?.department?.name || "General"}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={app.status} size="sm" />
+                  </TableCell>
+                  <TableCell className="text-slate-500 text-xs">
+                    {app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : "-"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Link to={`/citizen/applications/${app.id}`}>
+                      <Button variant="ghost" size="sm" className="text-xs text-blue-700">
+                        <span>{t("common.view") || "View"}</span>
+                        <ExternalLink className="w-3 h-3 ml-1" />
+                      </Button>
+                    </Link>
                   </TableCell>
                 </TableRow>
-              ) : filteredApps.length === 0 ? (
-                <EmptyTableState
-                  title="No service applications found"
-                  description={
-                    searchQuery
-                      ? "No records match your search criteria."
-                      : "You have not submitted any service applications under this filter."
-                  }
-                  colSpan={7}
-                />
-              ) : (
-                filteredApps.map((app) => (
-                  <TableRow
-                    key={app.id}
-                    onClick={() => navigate(`/citizen/applications/${app.id}`)}
-                    className="cursor-pointer hover:bg-blue-50/40 transition"
-                  >
-                    <TableCell className="font-mono font-bold text-blue-700 text-xs">
-                      {app.applicationNumber}
-                    </TableCell>
-                    <TableCell className="font-semibold text-slate-900 max-w-xs truncate text-xs">
-                      {app.service?.name || "Civic Service Scheme"}
-                    </TableCell>
-                    <TableCell className="text-xs text-slate-600">
-                      {app.department?.name || "State Authority"}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={app.status} type="application" size="sm" />
-                    </TableCell>
-                    <TableCell className="text-xs text-slate-500 font-mono">
-                      {new Date(app.submittedAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-xs text-slate-600">
-                      {app.documents?.length || 0} File(s)
-                    </TableCell>
-                    <TableCell>
-                      <Link to={`/citizen/applications/${app.id}`} onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-xs py-1 px-2.5 font-bold"
-                          rightIcon={<ExternalLink className="w-3 h-3" />}
-                        >
-                          Track Status
-                        </Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </Card>
     </div>
   );

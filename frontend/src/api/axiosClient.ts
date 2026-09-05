@@ -14,12 +14,17 @@ export const axiosClient = axios.create({
   timeout: 15000,
 });
 
-// Request Interceptor: Attach JWT Bearer Token
+// Request Interceptor: Attach JWT Bearer Token & Preferred Language
 axiosClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("setu_auth_token");
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const lang = localStorage.getItem("setu_preferred_language") || "en";
+    if (config.headers) {
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      config.headers["Accept-Language"] = lang;
+      config.headers["X-Language"] = lang;
     }
     return config;
   },

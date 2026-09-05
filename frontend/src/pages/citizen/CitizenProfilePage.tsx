@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage, SUPPORTED_LANGUAGES } from "../../context/LanguageContext";
 import citizenApi from "../../api/citizenApi";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
@@ -17,11 +18,14 @@ import {
   Save,
   Briefcase,
   Calendar,
+  Globe,
+  CheckCircle2,
 } from "lucide-react";
 
 export const CitizenProfilePage: React.FC = () => {
   const { refreshUser } = useAuth();
   const toast = useToast();
+  const { language, setLanguage, t } = useLanguage();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -56,7 +60,7 @@ export const CitizenProfilePage: React.FC = () => {
           setOccupation(p.occupation || "");
           setEmergencyContact(p.emergencyContact || "");
         }
-      } catch (err: any) {
+      } catch {
         toast.error("Failed to load profile details.", "Error");
       }
     };
@@ -119,7 +123,7 @@ export const CitizenProfilePage: React.FC = () => {
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-slate-900">{fullName || "Citizen"}</h2>
               <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-200">
-                VERIFIED
+                {t("common.verifiedCitizen")}
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">{email}</p>
@@ -128,7 +132,7 @@ export const CitizenProfilePage: React.FC = () => {
 
         <div className="flex items-center gap-2 text-xs bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-slate-600">
           <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>Aadhaar eKYC: <strong className="text-slate-900">Active</strong></span>
+          <span>{t("common.ekycLinked")}</span>
         </div>
       </div>
 
@@ -138,11 +142,52 @@ export const CitizenProfilePage: React.FC = () => {
         </Alert>
       )}
 
-      {/* 2. Profile Form */}
+      {/* 2. Language Preference Card */}
+      <Card className="border-slate-200 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Globe className="w-5 h-5 text-blue-700" />
+            <CardTitle className="text-base">{t("common.language")}</CardTitle>
+          </div>
+          <CardDescription className="text-xs">
+            {t("common.selectLanguagePrompt")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+            {SUPPORTED_LANGUAGES.map((lang) => {
+              const isSelected = language === lang.code;
+              return (
+                <button
+                  key={lang.code}
+                  type="button"
+                  onClick={() => {
+                    setLanguage(lang.code);
+                    toast.success(`Language switched to ${lang.name}`, "Language Updated");
+                  }}
+                  className={`p-3 rounded-xl border text-left transition flex items-center justify-between ${
+                    isSelected
+                      ? "bg-blue-50 border-blue-600 ring-2 ring-blue-600/20 text-blue-900 shadow-xs"
+                      : "bg-white border-slate-200 hover:border-slate-300 text-slate-700"
+                  }`}
+                >
+                  <div>
+                    <p className="font-bold text-xs">{lang.name}</p>
+                    <p className="text-[11px] text-slate-500 font-medium">{lang.nativeName}</p>
+                  </div>
+                  {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-700" />}
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 3. Demographic Information Form */}
       <Card className="border-slate-200 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base">Personal & Demographic Information</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-base">{t("auth.registerTitle") || "Demographic & Contact Details"}</CardTitle>
+          <CardDescription className="text-xs">
             Keep your residential and contact details up-to-date for accurate location triage
           </CardDescription>
         </CardHeader>
@@ -151,7 +196,7 @@ export const CitizenProfilePage: React.FC = () => {
           <form onSubmit={handleSave} className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
-                label="Full Legal Name"
+                label={t("auth.fullName")}
                 required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
@@ -159,17 +204,17 @@ export const CitizenProfilePage: React.FC = () => {
               />
 
               <Input
-                label="Registered Email Address"
+                label={t("auth.email")}
                 disabled
                 value={email}
-                helperText="Email is bound to your digital authentication token"
+                helperText="Bound to your secure digital authentication token"
                 leftIcon={<Mail className="w-4 h-4" />}
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
-                label="Mobile Contact Number"
+                label={t("auth.phone")}
                 type="tel"
                 placeholder="+91 9876543210"
                 value={phone}
@@ -178,12 +223,12 @@ export const CitizenProfilePage: React.FC = () => {
               />
 
               <Select
-                label="Gender"
+                label={t("auth.gender")}
                 options={[
-                  { value: "MALE", label: "Male" },
-                  { value: "FEMALE", label: "Female" },
-                  { value: "OTHER", label: "Other" },
-                  { value: "PREFER_NOT_TO_SAY", label: "Prefer not to say" },
+                  { value: "MALE", label: t("auth.genderMale") },
+                  { value: "FEMALE", label: t("auth.genderFemale") },
+                  { value: "OTHER", label: t("auth.genderOther") },
+                  { value: "PREFER_NOT_TO_SAY", label: t("auth.genderPreferNot") },
                 ]}
                 placeholder="Select Gender"
                 value={gender}
@@ -193,7 +238,7 @@ export const CitizenProfilePage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
-                label="Date of Birth"
+                label={t("auth.dob")}
                 type="date"
                 value={dateOfBirth}
                 onChange={(e) => setDateOfBirth(e.target.value)}
@@ -201,7 +246,7 @@ export const CitizenProfilePage: React.FC = () => {
               />
 
               <Input
-                label="Postal PIN Code"
+                label={t("auth.pincode")}
                 placeholder="e.g. 110001"
                 value={pincode}
                 onChange={(e) => setPincode(e.target.value)}
@@ -211,7 +256,7 @@ export const CitizenProfilePage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
-                label="Primary Residential Address"
+                label={t("auth.address")}
                 placeholder="House / Flat / Street Name"
                 value={addressLine1}
                 onChange={(e) => setAddressLine1(e.target.value)}
@@ -227,15 +272,15 @@ export const CitizenProfilePage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
-                label="Profession / Occupation"
-                placeholder="e.g. Healthcare / Teacher / Trader"
+                label={t("auth.occupation")}
+                placeholder="e.g. Healthcare / Agriculture / Trader"
                 value={occupation}
                 onChange={(e) => setOccupation(e.target.value)}
                 leftIcon={<Briefcase className="w-4 h-4" />}
               />
 
               <Input
-                label="Emergency Contact Phone"
+                label={t("auth.emergencyContact")}
                 placeholder="Family / Alternate Number"
                 value={emergencyContact}
                 onChange={(e) => setEmergencyContact(e.target.value)}
@@ -252,7 +297,7 @@ export const CitizenProfilePage: React.FC = () => {
                 className="font-bold shadow-md px-6"
                 leftIcon={<Save className="w-4 h-4" />}
               >
-                Save Profile Changes
+                {t("common.saveDraft") ? "Save Changes" : "Save Changes"}
               </Button>
             </div>
           </form>

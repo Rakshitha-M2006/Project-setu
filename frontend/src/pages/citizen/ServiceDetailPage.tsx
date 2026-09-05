@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import citizenApi, { ServiceItem } from "../../api/citizenApi";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
@@ -14,11 +15,15 @@ import {
   ShieldCheck,
   ArrowRight,
   AlertCircle,
+  ExternalLink,
+  ArrowUpRight,
+  Info,
 } from "lucide-react";
 
 export const ServiceDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const toast = useToast();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const [service, setService] = useState<ServiceItem | null>(null);
@@ -50,13 +55,14 @@ export const ServiceDetailPage: React.FC = () => {
     return (
       <div className="max-w-4xl mx-auto py-20 text-center space-y-3">
         <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-xs text-slate-500">Loading government service specifications...</p>
+        <p className="text-xs text-slate-500">{t("common.loading")}</p>
       </div>
     );
   }
 
   if (!service) return null;
 
+  const isExternal = service.isExternal || service.applicationType === "EXTERNAL";
   const fee = Number(service.feeAmount) || 0;
   const docsList: string[] = Array.isArray(service.requiredDocuments)
     ? service.requiredDocuments
@@ -65,7 +71,7 @@ export const ServiceDetailPage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* 1. Header Navigation */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link to="/citizen/services">
             <Button variant="ghost" size="sm" className="p-2">
@@ -77,7 +83,18 @@ export const ServiceDetailPage: React.FC = () => {
               <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
                 {service.code}
               </span>
-              <span className="text-xs text-slate-500">• {service.department?.name || "General Administration"}</span>
+              <span className="text-xs text-slate-500">• {service.category || service.department?.name || "General Administration"}</span>
+              {isExternal ? (
+                <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200 flex items-center gap-1">
+                  <ExternalLink className="w-2.5 h-2.5" />
+                  Official Portal
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                  <CheckCircle2 className="w-2.5 h-2.5" />
+                  SETU Direct Apply
+                </span>
+              )}
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-0.5">
               {service.name}
@@ -85,17 +102,43 @@ export const ServiceDetailPage: React.FC = () => {
           </div>
         </div>
 
-        <Link to={`/citizen/services/${service.id}/apply`}>
-          <Button
-            variant="primary"
-            size="md"
-            className="font-bold shadow-md px-6 text-xs sm:text-sm"
-            rightIcon={<ArrowRight className="w-4 h-4" />}
+        {isExternal && service.officialPortalUrl ? (
+          <a
+            href={service.officialPortalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm shadow-md transition"
           >
-            Start Application
-          </Button>
-        </Link>
+            <span>{t("common.continueToOfficialPortal") || "Continue to Official Portal"}</span>
+            <ArrowUpRight className="w-4 h-4" />
+          </a>
+        ) : (
+          <Link to={`/citizen/services/${service.id}/apply`}>
+            <Button
+              variant="primary"
+              size="md"
+              className="font-bold shadow-md px-6 text-xs sm:text-sm"
+              rightIcon={<ArrowRight className="w-4 h-4" />}
+            >
+              {t("services.applyNow")}
+            </Button>
+          </Link>
+        )}
       </div>
+
+      {/* External Service Notice Card */}
+      {isExternal && (
+        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 flex items-start gap-3">
+          <Info className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-xs">
+            <h4 className="font-bold text-amber-900">Official Government Portal Redirection</h4>
+            <p className="leading-relaxed">
+              This statutory identity / registration service is processed directly by the designated central or state portal (
+              <strong className="text-amber-950">{service.officialPortalUrl}</strong>). PROJECT SETU provides verified document checklists and direct navigation.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* 2. Key Specs Overview Banner */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -106,7 +149,7 @@ export const ServiceDetailPage: React.FC = () => {
             </div>
             <div>
               <span className="text-[10px] text-slate-400 uppercase font-bold block">Governing Authority</span>
-              <p className="text-xs font-bold text-slate-900 line-clamp-1">{service.department?.name}</p>
+              <p className="text-xs font-bold text-slate-900 line-clamp-1">{service.department?.name || service.category}</p>
             </div>
           </CardContent>
         </Card>
@@ -117,8 +160,8 @@ export const ServiceDetailPage: React.FC = () => {
               <Clock className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">Statutory Processing Window</span>
-              <p className="text-xs font-bold text-slate-900">{service.estimatedProcessingDays} Working Days</p>
+              <span className="text-[10px] text-slate-400 uppercase font-bold block">{t("services.processingTime")}</span>
+              <p className="text-xs font-bold text-slate-900">{service.estimatedProcessingDays} {t("services.days")}</p>
             </div>
           </CardContent>
         </Card>
@@ -129,9 +172,9 @@ export const ServiceDetailPage: React.FC = () => {
               <IndianRupee className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">Application Fee</span>
+              <span className="text-[10px] text-slate-400 uppercase font-bold block">{t("services.fee")}</span>
               <p className="text-xs font-bold text-slate-900">
-                {fee > 0 ? `₹${fee.toFixed(2)} (Online Payment)` : "Free of Cost"}
+                {fee > 0 ? `₹${fee.toFixed(2)} (Online Payment)` : t("services.freeService")}
               </p>
             </div>
           </CardContent>
@@ -156,7 +199,7 @@ export const ServiceDetailPage: React.FC = () => {
               <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-200 space-y-2 text-xs">
                 <div className="flex items-center gap-2 text-blue-900 font-bold">
                   <ShieldCheck className="w-4 h-4 text-blue-700" />
-                  <span>Citizen Eligibility Criteria</span>
+                  <span>{t("services.checkEligibility") || "Citizen Eligibility Criteria"}</span>
                 </div>
                 <p className="text-blue-950 leading-relaxed">
                   {service.eligibilityCriteria ||
@@ -180,9 +223,13 @@ export const ServiceDetailPage: React.FC = () => {
                   1
                 </span>
                 <div>
-                  <p className="font-bold text-slate-900">Submit Digital Application</p>
+                  <p className="font-bold text-slate-900">
+                    {isExternal ? "Verify Eligibility & Gather Required Documents" : "Submit Digital Application"}
+                  </p>
                   <p className="text-slate-500">
-                    Fill in applicant personal details, address, and upload certified document scans.
+                    {isExternal
+                      ? "Review checklist below and prepare all required identification papers."
+                      : "Fill in applicant personal details, address, and upload certified document scans."}
                   </p>
                 </div>
               </div>
@@ -192,9 +239,13 @@ export const ServiceDetailPage: React.FC = () => {
                   2
                 </span>
                 <div>
-                  <p className="font-bold text-slate-900">Scrutiny & Document Verification</p>
+                  <p className="font-bold text-slate-900">
+                    {isExternal ? "Proceed to Official Government Gateway" : "Scrutiny & Document Verification"}
+                  </p>
                   <p className="text-slate-500">
-                    Department verification officer verifies proofs against municipal registry records.
+                    {isExternal
+                      ? "Use official portal link to authenticate via Aadhaar OTP / DigiLocker and submit."
+                      : "Department verification officer verifies proofs against municipal registry records."}
                   </p>
                 </div>
               </div>
@@ -206,7 +257,7 @@ export const ServiceDetailPage: React.FC = () => {
                 <div>
                   <p className="font-bold text-slate-900">Sanction / Certificate Issuance</p>
                   <p className="text-slate-500">
-                    Upon approval, the digital permit / connection sanction order is delivered to your portal.
+                    Upon approval, the digital permit / connection sanction order or certificate is generated.
                   </p>
                 </div>
               </div>
@@ -220,7 +271,7 @@ export const ServiceDetailPage: React.FC = () => {
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <FileCheck2 className="w-4 h-4 text-blue-700" />
-                <CardTitle className="text-sm">Mandatory Required Documents</CardTitle>
+                <CardTitle className="text-sm">{t("services.requiredDocuments")}</CardTitle>
               </div>
               <CardDescription className="text-xs">
                 Ensure scanned PDF or image copies are prepared prior to applying
@@ -243,16 +294,28 @@ export const ServiceDetailPage: React.FC = () => {
               </div>
 
               <div className="pt-3">
-                <Link to={`/citizen/services/${service.id}/apply`}>
-                  <Button
-                    variant="primary"
-                    size="md"
-                    className="w-full font-bold shadow-md text-xs py-2.5"
-                    rightIcon={<ArrowRight className="w-4 h-4" />}
+                {isExternal && service.officialPortalUrl ? (
+                  <a
+                    href={service.officialPortalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition"
                   >
-                    Proceed to Application Form
-                  </Button>
-                </Link>
+                    <span>{t("common.continueToOfficialPortal") || "Continue to Official Portal"}</span>
+                    <ArrowUpRight className="w-4 h-4" />
+                  </a>
+                ) : (
+                  <Link to={`/citizen/services/${service.id}/apply`}>
+                    <Button
+                      variant="primary"
+                      size="md"
+                      className="w-full font-bold shadow-md text-xs py-2.5"
+                      rightIcon={<ArrowRight className="w-4 h-4" />}
+                    >
+                      {t("services.applyNow")}
+                    </Button>
+                  </Link>
+                )}
               </div>
             </CardContent>
           </Card>
