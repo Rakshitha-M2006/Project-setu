@@ -6,6 +6,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, EmptyTab
 import { Modal } from "../../components/ui/Modal";
 import adminApi, { AdminDepartmentItem, AdminCategoryItem } from "../../api/adminApi";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Building,
   Plus,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 
 export const AdminDepartmentsPage: React.FC = () => {
+  const { t } = useLanguage();
   const toast = useToast();
   const [departments, setDepartments] = useState<AdminDepartmentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -159,7 +161,7 @@ export const AdminDepartmentsPage: React.FC = () => {
             className="bg-purple-700 hover:bg-purple-800 text-white font-bold"
             leftIcon={<Plus className="w-4 h-4" />}
           >
-            Add Department
+            {t("admin.addDepartment")}
           </Button>
         </div>
       </div>

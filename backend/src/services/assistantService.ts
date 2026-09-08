@@ -1,6 +1,23 @@
 import { prisma } from "../config/database";
 import { SERVICE_REGISTRY, getServiceSchema, ServiceDefinition, searchServices } from "../config/serviceSchemaRegistry";
 import { SCHEME_REGISTRY, getSchemeBySlug, searchSchemes, SchemeDefinition } from "../config/schemeRegistry";
+import { logger } from "../utils/logger";
+import { OllamaService } from "./ollamaService";
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: "English",
+  ta: "Tamil (தமிழ்)",
+  hi: "Hindi (हिन्दी)",
+  te: "Telugu (తెలుగు)",
+  kn: "Kannada (ಕನ್ನಡ)",
+  ml: "Malayalam (മലയാളം)",
+  mr: "Marathi (मराठी)",
+  bn: "Bengali (বাংলা)",
+  gu: "Gujarati (ગુજરાતી)",
+  pa: "Punjabi (ਪੰਜਾਬੀ)",
+  or: "Odia (ଓଡ଼ିଆ)",
+  ur: "Urdu (اردو)",
+};
 
 export interface AssistantResponse {
   replyText: string;
@@ -127,7 +144,77 @@ export class AssistantService {
       }
     }
 
-    // 2. Government Schemes Inquiries
+    // 2. Resolve domain response (verified schemes, services, checklists, or grievance triage)
+    const baseResponse = await this.resolveDeterministicResponse(text, language);
+
+    // 3. Query local Ollama instance (model: gemma3)
+    try {
+      const systemPrompt = this.buildSystemPrompt(language, baseResponse.replyText);
+      const ollamaRes = await OllamaService.generate(message, systemPrompt);
+
+      if (ollamaRes.success && ollamaRes.response) {
+        logger.info(`[AssistantService] Enriched query with Ollama ${ollamaRes.model} in ${ollamaRes.durationMs}ms`);
+        return {
+          ...baseResponse,
+          replyText: ollamaRes.response,
+        };
+      } else {
+        logger.warn(`[AssistantService] Ollama unreachable or error (${ollamaRes.errorType || "unknown"}). Falling back to internal response.`);
+      }
+    } catch (llmErr: any) {
+      logger.warn(`[AssistantService] Exception during Ollama generation: ${llmErr.message}. Serving fallback.`);
+    }
+
+    return baseResponse;
+  }
+
+  /**
+   * Constructs the e-Governance multilingual system prompt for Ollama
+   */
+  private buildSystemPrompt(language: string, domainContext?: string): string {
+    const langName = LANGUAGE_NAMES[language] || "English";
+    return `You are SETU AI (सेतु AI), the official AI assistant for PROJECT SETU — Government of India's public service and grievance redressal platform.
+Help the citizen regarding government services, welfare schemes, certificates, or grievance filing.
+
+${domainContext ? `Official Portal Context:\n${domainContext}\n` : ""}
+CRITICAL INSTRUCTIONS:
+- LANGUAGE: You MUST respond entirely in ${langName} (Language code: "${language}"). Even if the question is in another language, formulate your full response in ${langName}.
+- TONE: Professional, polite, helpful, and concise.
+- FORMAT: Use clear markdown with bullet points. Limit reply to 2-3 brief paragraphs so citizens can read quickly.`;
+  }
+
+  /**
+   * Deterministic domain router for verified responses and rich UI cards
+   */
+  private async resolveDeterministicResponse(text: string, language: string): Promise<AssistantResponse> {
+    // Check if general greeting / portal inquiry
+    if (
+      text === "hi" ||
+      text === "hello" ||
+      text === "namaste" ||
+      text === "vanakkam" ||
+      text.startsWith("hi ") ||
+      text.startsWith("hello ") ||
+      text.includes("who are you") ||
+      text.includes("what is setu") ||
+      text.includes("what is project setu") ||
+      text.includes("what can you do") ||
+      text === "help"
+    ) {
+      return {
+        replyText:
+          "Namaste! I am SETU AI, the official digital assistant for PROJECT SETU — Government of India's unified public service portal. I can assist you with government welfare schemes (such as PM-KISAN and Ayushman Bharat), certificate applications (Income, Domicile, Caste), and 24/7 public grievance redressal.",
+        intent: "GENERAL_HELP",
+        suggestedActions: [
+          { label: "Explore Government Schemes", prompt: "Show available schemes", actionType: "NAVIGATE", url: "/citizen/schemes" },
+          { label: "Apply for Certificates", prompt: "Apply for certificates", actionType: "NAVIGATE", url: "/citizen/services" },
+          { label: "Lodge a Grievance", prompt: "Lodge a complaint", actionType: "NAVIGATE", url: "/citizen/grievances/new" },
+          { label: "Track Application", prompt: "Track my application", actionType: "NAVIGATE", url: "/citizen/applications" },
+        ],
+      };
+    }
+
+    // Schemes Inquiries
     if (
       text.includes("scheme") ||
       text.includes("pm kisan") ||
@@ -162,7 +249,7 @@ export class AssistantService {
       return this.handleSchemeInquiry(text, language);
     }
 
-    // 3. Document / Checklist Requests
+    // Document / Checklist Requests
     if (
       text.includes("documents required") ||
       text.includes("what documents") ||
@@ -173,7 +260,7 @@ export class AssistantService {
       return this.handleChecklistInquiry(text, language);
     }
 
-    // 4. Grievance / Complaint Triage
+    // Grievance / Complaint Triage
     if (
       text.includes("complaint") ||
       text.includes("grievance") ||
@@ -195,7 +282,7 @@ export class AssistantService {
       return this.handleGrievanceTriage(text, language);
     }
 
-    // 5. Government Services Catalog Inquiry
+    // Government Services Catalog Inquiry
     return this.handleServiceInquiry(text, language);
   }
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import citizenApi, { NotificationItem } from "../../api/citizenApi";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Bell,
   CheckCheck,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 
 export const NotificationDropdown: React.FC = () => {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -67,9 +69,9 @@ export const NotificationDropdown: React.FC = () => {
       await citizenApi.markAllNotificationsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
-      toast.success("All notifications marked as read.", "Done");
+      toast.success(t("notifications.markAllRead"), t("common.done"));
     } catch {
-      toast.error("Failed to mark notifications read.", "Error");
+      toast.error(t("errors.serverError"), t("common.error"));
     }
   };
 
@@ -112,8 +114,8 @@ export const NotificationDropdown: React.FC = () => {
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 rounded-lg text-slate-600 hover:text-blue-700 hover:bg-blue-50 border border-slate-200 transition relative focus:outline-none focus:ring-2 focus:ring-blue-500"
-        title="Notifications"
-        aria-label="Notifications"
+        title={t("common.notifications")}
+        aria-label={t("common.notifications")}
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
@@ -125,15 +127,15 @@ export const NotificationDropdown: React.FC = () => {
 
       {/* Popover Dropdown Card */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white shadow-2xl border border-slate-200 z-50 overflow-hidden">
+        <div className="absolute right-0 mt-2 w-80 sm:w-96 max-w-[calc(100vw-1.5rem)] rounded-2xl bg-white shadow-2xl border border-slate-200 z-50 overflow-hidden">
           {/* Header */}
           <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Bell className="w-4 h-4 text-amber-400" />
-              <span className="text-xs font-black uppercase tracking-wider">Notifications</span>
+              <span className="text-xs font-black uppercase tracking-wider">{t("common.notifications")}</span>
               {unreadCount > 0 && (
                 <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  {unreadCount} new
+                  {unreadCount} {t("notifications.unread")}
                 </span>
               )}
             </div>
@@ -145,7 +147,7 @@ export const NotificationDropdown: React.FC = () => {
                 className="text-[11px] text-slate-300 hover:text-white font-semibold flex items-center gap-1 transition"
               >
                 <CheckCheck className="w-3 h-3 text-emerald-400" />
-                <span>Mark all read</span>
+                <span>{t("notifications.markAllRead")}</span>
               </button>
             )}
           </div>
@@ -155,8 +157,8 @@ export const NotificationDropdown: React.FC = () => {
             {notifications.length === 0 ? (
               <div className="p-8 text-center space-y-2">
                 <Inbox className="w-8 h-8 text-slate-300 mx-auto" />
-                <p className="text-xs font-bold text-slate-700">No notifications yet</p>
-                <p className="text-[11px] text-slate-400">Status updates on grievances & services will appear here.</p>
+                <p className="text-xs font-bold text-slate-700">{t("notifications.noNotifications")}</p>
+                <p className="text-[11px] text-slate-400">{t("notifications.noNotificationsDesc")}</p>
               </div>
             ) : (
               notifications.map((n) => (
@@ -201,7 +203,7 @@ export const NotificationDropdown: React.FC = () => {
               onClick={() => setIsOpen(false)}
               className="text-xs font-bold text-blue-700 hover:text-blue-900 flex items-center justify-center gap-1 py-1"
             >
-              <span>Open Notification Command Center</span>
+              <span>{t("navigation.notifications")}</span>
               <ExternalLink className="w-3 h-3" />
             </Link>
           </div>

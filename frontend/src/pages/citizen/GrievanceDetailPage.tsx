@@ -1,11 +1,13 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import citizenApi, { GrievanceItem } from "../../api/citizenApi";
 import axiosClient from "../../api/axiosClient";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { StatusBadge } from "../../components/ui/StatusBadge";
+import useTrackingPolling from "../../hooks/useTrackingPolling";
 import { Alert } from "../../components/ui/Alert";
 import {
   ArrowLeft,
@@ -36,50 +38,62 @@ interface SlaData {
 export const GrievanceDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const toast = useToast();
+  const { t } = useLanguage();
 
   const [grievance, setGrievance] = useState<GrievanceItem | null>(null);
   const [slaData, setSlaData] = useState<SlaData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const fetchGrievanceData = useCallback(async () => {
-    if (!id) return;
-    setIsLoading(true);
-    setErrorMsg(null);
-    try {
-      // 1. Fetch Grievance Details
-      const response = await citizenApi.getGrievanceById(id);
-      if (response.success && response.data) {
-        setGrievance(response.data);
-      } else {
-        setErrorMsg("Could not find this grievance in official records.");
+  const fetchGrievanceData = useCallback(
+    async (isSilent = false) => {
+      if (!id) return;
+      if (!isSilent) {
+        setIsLoading(true);
+        setErrorMsg(null);
       }
-
-      // 2. Fetch Live SLA Status
       try {
-        const slaRes = await axiosClient.get<{ success: boolean; data: SlaData }>(
-          `/sla/grievances/${id}/status`
-        );
-        if (slaRes.data?.success && slaRes.data?.data) {
-          setSlaData(slaRes.data.data);
+        // 1. Fetch Grievance Details
+        const response = await citizenApi.getGrievanceById(id);
+        if (response.success && response.data) {
+          setGrievance(response.data);
+        } else if (!isSilent) {
+          setErrorMsg("Could not find this grievance in official records.");
         }
-      } catch {
-        // SLA calculation optional fallback
-      }
-    } catch (err: any) {
-      const message =
-        err.response?.status === 403
-          ? "You are not authorized to view this grievance."
-          : err.response?.data?.message || "Failed to load grievance details.";
-      setErrorMsg(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [id]);
 
-  useEffect(() => {
-    fetchGrievanceData();
-  }, [fetchGrievanceData]);
+        // 2. Fetch Live SLA Status
+        try {
+          const slaRes = await axiosClient.get<{ success: boolean; data: SlaData }>(
+            `/sla/grievances/${id}/status`
+          );
+          if (slaRes.data?.success && slaRes.data?.data) {
+            setSlaData(slaRes.data.data);
+          }
+        } catch {
+          // SLA calculation optional fallback
+        }
+      } catch (err: any) {
+        if (!isSilent) {
+          const message =
+            err.response?.status === 403
+              ? "You are not authorized to view this grievance."
+              : err.response?.data?.message || "Failed to load grievance details.";
+          setErrorMsg(message);
+        }
+      } finally {
+        if (!isSilent) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [id]
+  );
+
+  // Auto-refresh tracking data every 5 seconds without full page reload
+  const { refreshNow, isRefreshing } = useTrackingPolling(
+    (isSilent) => fetchGrievanceData(isSilent),
+    { intervalMs: 5000, enabled: !!id }
+  );
 
   const handleCopyTrackingNumber = () => {
     if (grievance?.trackingNumber) {
@@ -88,7 +102,7 @@ export const GrievanceDetailPage: React.FC = () => {
     }
   };
 
-  // Determine Active Step (1 to 8)
+  // Determine Active Step (1 to 6)
   const getStepIndex = (status: string): number => {
     switch (status) {
       case "SUBMITTED":
@@ -97,24 +111,22 @@ export const GrievanceDetailPage: React.FC = () => {
       case "AI_TRIAGED":
       case "AI_REVIEW_REQUIRED":
       case "NEEDS_REVIEW":
+      case "UNDER_REVIEW":
         return 2;
       case "DEPARTMENT_ASSIGNED":
       case "OFFICER_PENDING":
-        return 3;
       case "ASSIGNED":
-        return 4;
-      case "UNDER_INSPECTION":
-      case "UNDER_REVIEW":
-      case "DOCUMENT_VERIFICATION":
-        return 5;
+        return 3;
       case "IN_PROGRESS":
+      case "UNDER_INSPECTION":
       case "ESCALATED":
       case "REOPENED":
-        return 6;
+        return 4;
       case "RESOLVED":
-        return 7;
+        return 5;
+      case "CLOSED":
       case "COMPLETED":
-        return 8;
+        return 6;
       default:
         return 1;
     }
@@ -124,7 +136,7 @@ export const GrievanceDetailPage: React.FC = () => {
     return (
       <div className="max-w-4xl mx-auto py-16 text-center space-y-4">
         <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-xs text-slate-500 font-medium">Retrieving grievance records and SLA tracking...</p>
+        <p className="text-xs text-slate-500 font-medium">{t("grievances.retrievingRecords")}</p>
       </div>
     );
   }
@@ -136,7 +148,7 @@ export const GrievanceDetailPage: React.FC = () => {
         <div className="text-center">
           <Link to="/citizen/grievances">
             <Button variant="outline" size="sm" leftIcon={<ArrowLeft className="w-4 h-4" />}>
-              Back to My Grievances
+              {t("grievances.backToGrievances")}
             </Button>
           </Link>
         </div>
@@ -146,16 +158,14 @@ export const GrievanceDetailPage: React.FC = () => {
 
   const currentStep = getStepIndex(grievance.status);
 
-  // Visual 8-Step Lifecycle Steps
+  // Visual 6-Step Grievance Lifecycle Steps
   const timelineSteps = [
-    { title: "Submitted", desc: "Lodged in registry" },
-    { title: "AI Classified", desc: "NLP triage & SLA set" },
-    { title: "Dept Assigned", desc: "Routed to department" },
-    { title: "Officer Assigned", desc: "Field officer claimed" },
-    { title: "Under Review", desc: "On-site inspection" },
-    { title: "In Progress", desc: "Rectification underway" },
-    { title: "Resolved", desc: "Action verified" },
-    { title: "Closed", desc: "Case finalized" },
+    { title: t("grievanceStatus.grievanceSubmitted") || "Grievance Submitted", desc: t("grievances.step1Desc") || "Lodged in registry" },
+    { title: t("grievanceStatus.grievanceUnderReview") || "Under Review", desc: t("grievances.step2Desc") || "AI triage & review" },
+    { title: t("grievanceStatus.grievanceAssigned") || "Assigned to Department", desc: t("grievances.step3Desc") || "Routed to department" },
+    { title: t("grievanceStatus.grievanceActionInProgress") || "Action In Progress", desc: t("grievances.step4Desc") || "Field action underway" },
+    { title: t("grievanceStatus.grievanceResolved") || "Resolved", desc: t("grievances.step5Desc") || "Remediation verified" },
+    { title: t("grievanceStatus.grievanceClosed") || "Closed", desc: t("grievances.step6Desc") || "Case finalized" },
   ];
 
   return (
@@ -170,7 +180,7 @@ export const GrievanceDetailPage: React.FC = () => {
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Public Reference:</span>
+              <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">{t("grievances.publicRef") || "Public Reference:"}</span>
               <h1 className="text-xl sm:text-2xl font-black text-blue-700 tracking-tight font-mono">
                 {grievance.trackingNumber}
               </h1>
@@ -190,13 +200,18 @@ export const GrievanceDetailPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Live • 5s</span>
+          </span>
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchGrievanceData}
-            leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+            onClick={() => refreshNow()}
+            isLoading={isRefreshing && !grievance}
+            leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />}
           >
-            Refresh Status
+            {t("common.refresh")}
           </Button>
         </div>
       </div>
@@ -207,10 +222,10 @@ export const GrievanceDetailPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-blue-700" />
-              <CardTitle className="text-sm">Redressal Progress Stepper</CardTitle>
+              <CardTitle className="text-sm">{t("grievances.redressalStepper")}</CardTitle>
             </div>
             <span className="text-[11px] text-slate-500">
-              Stage <strong>{currentStep}</strong> of <strong>8</strong>
+              Stage <strong>{currentStep}</strong> of <strong>6</strong>
             </span>
           </div>
         </CardHeader>
@@ -225,7 +240,7 @@ export const GrievanceDetailPage: React.FC = () => {
             </div>
 
             {/* Stepper Dots Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-3 sm:gap-2 relative">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-2 relative">
               {timelineSteps.map((step, idx) => {
                 const stepNum = idx + 1;
                 const isCompleted = stepNum < currentStep;
@@ -264,12 +279,12 @@ export const GrievanceDetailPage: React.FC = () => {
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={grievance.status} size="md" />
+            <StatusBadge status={grievance.status} type="grievance" size="md" />
             <StatusBadge status={grievance.priority} type="priority" size="md" />
             {grievance.isUrgent && (
               <span className="bg-rose-100 text-rose-800 text-xs px-2.5 py-0.5 rounded-full font-bold border border-rose-200 flex items-center gap-1">
                 <Flame className="w-3.5 h-3.5 text-rose-600" />
-                Urgent Public Hazard
+                {t("grievances.urgentHazard")}
               </span>
             )}
             {slaData?.currentEscalationLevel && (
@@ -327,21 +342,21 @@ export const GrievanceDetailPage: React.FC = () => {
 
       {/* 4. Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column (2 Cols): Problem Description & Details */}
+        {/* Left Column (2 Cols): Problem {t("grievances.descLabel") || "Description"} & Details */}
         <div className="lg:col-span-2 space-y-6">
           <Card className="border-slate-200 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-base">Grievance Particulars</CardTitle>
-              <CardDescription>Submitted details and administrative assignment</CardDescription>
+              <CardTitle className="text-base">{t("grievances.grievanceParticulars")}</CardTitle>
+              <CardDescription>{t("grievances.detailsSubtitle") || "Submitted details and administrative assignment"}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Subject Title</h4>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t("common.subject") || "Subject Title"}</h4>
                 <p className="text-base font-bold text-slate-900 mt-1">{grievance.title}</p>
               </div>
 
               <div>
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Description</h4>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t("grievances.descLabel") || "Description"}</h4>
                 <p className="text-xs sm:text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200 mt-1 whitespace-pre-wrap">
                   {grievance.description}
                 </p>
@@ -368,14 +383,14 @@ export const GrievanceDetailPage: React.FC = () => {
               {/* Department & Category */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Assigned Department</span>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">{t("dashboard.assignedDepartment") || "Assigned Department"}</span>
                   <p className="font-bold text-xs text-slate-900">
                     {grievance.department?.name || "General Administration"}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Problem Category</span>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">{t("grievances.problemCategory") || "Problem Category"}</span>
                   <p className="font-bold text-xs text-slate-900">
                     {grievance.category?.name || "General Public Grievance"}
                   </p>
@@ -389,18 +404,18 @@ export const GrievanceDetailPage: React.FC = () => {
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-blue-700" />
-                <CardTitle className="text-sm">Incident Location & Landmark</CardTitle>
+                <CardTitle className="text-sm">{t("grievances.incidentLocationTitle") || "Incident Location & Landmark"}</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Physical Landmark</span>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">{t("grievances.physicalLandmark") || "Physical Landmark"}</span>
                   <p className="font-semibold text-slate-800">{grievance.addressText || "Not specified"}</p>
                 </div>
 
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Postal PIN Code</span>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">{t("common.pincode") || "Postal PIN Code"}</span>
                   <p className="font-mono font-bold text-slate-800">{grievance.pincode || "110001"}</p>
                 </div>
               </div>
@@ -408,7 +423,7 @@ export const GrievanceDetailPage: React.FC = () => {
               {grievance.location && (grievance.location.latitude || grievance.location.longitude) && (
                 <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-200 flex items-center justify-between text-xs text-blue-900">
                   <div className="space-y-0.5">
-                    <p className="font-bold">GPS Coordinates Attached:</p>
+                    <p className="font-bold">{t("grievances.gpsAttached") || "GPS Coordinates Attached:"}</p>
                     <p className="font-mono text-[11px]">
                       Lat: {grievance.location.latitude}, Lng: {grievance.location.longitude}
                     </p>
@@ -419,7 +434,7 @@ export const GrievanceDetailPage: React.FC = () => {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 font-bold text-blue-700 hover:underline text-xs bg-white px-3 py-1.5 rounded-lg border border-blue-200"
                   >
-                    <span>View Map</span>
+                    <span>{t("grievances.viewMap") || "View Map"}</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 </div>
@@ -472,7 +487,7 @@ export const GrievanceDetailPage: React.FC = () => {
         <div className="space-y-4">
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Official Redressal Timeline</CardTitle>
+              <CardTitle className="text-sm">{t("grievances.redressalTimeline") || "Official Redressal Timeline"}</CardTitle>
               <CardDescription className="text-xs">
                 Chronological record of all updates & transitions
               </CardDescription>
@@ -489,7 +504,7 @@ export const GrievanceDetailPage: React.FC = () => {
                         <span className="font-bold text-xs text-slate-900">
                           {h.actionTaken.replace(/_/g, " ")}
                         </span>
-                        <StatusBadge status={h.newStatus} size="sm" />
+                        <StatusBadge status={h.newStatus} type="grievance" size="sm" />
                       </div>
 
                       {h.remarks && (

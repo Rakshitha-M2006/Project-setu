@@ -24,16 +24,20 @@ export const createApp = (): Application => {
   // 2. Cross-Origin Resource Sharing (CORS)
   app.use(
     cors({
-      origin: (origin, callback) => {
-        // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
-        if (!origin || env.corsOrigins.includes(origin) || env.corsOrigins.includes("*") || !env.isProduction) {
-          return callback(null, true);
-        }
-        return callback(new Error(`CORS policy does not allow access from origin: ${origin}`), false);
-      },
+      origin: true,
       credentials: true,
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+      allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Accept",
+        "Accept-Language",
+        "X-Language",
+        "Cache-Control",
+        "Pragma",
+        "Expires",
+      ],
     })
   );
 

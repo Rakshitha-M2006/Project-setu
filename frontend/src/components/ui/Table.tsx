@@ -4,7 +4,7 @@ import { Inbox } from "lucide-react";
 
 export const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
   ({ className, ...props }, ref) => (
-    <div className="w-full overflow-auto rounded-xl border border-slate-200 shadow-sm">
+    <div className="w-full max-w-full overflow-x-auto min-w-0 rounded-xl border border-slate-200 shadow-sm">
       <table
         ref={ref}
         className={cn("w-full caption-bottom text-xs sm:text-sm text-left border-collapse", className)}

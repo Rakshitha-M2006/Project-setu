@@ -180,7 +180,7 @@ export const SetuAssistant: React.FC = () => {
             className="hidden sm:flex items-center gap-2 bg-slate-900 text-white text-xs font-bold px-3.5 py-2 rounded-2xl shadow-xl border border-slate-700 cursor-pointer hover:bg-slate-800 transition transform hover:-translate-x-1"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: "4s" }} />
-            <span>Need Help? Ask SETU AI</span>
+            <span>{t("assistant.needHelpPrompt") || "Need Help? Ask SETU AI"}</span>
           </div>
         )}
 
@@ -188,8 +188,8 @@ export const SetuAssistant: React.FC = () => {
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-700 via-indigo-700 to-blue-900 text-white flex items-center justify-center shadow-2xl hover:scale-105 active:scale-95 transition ring-4 ring-blue-600/20 focus:outline-none"
-          title="SETU AI Assistant"
-          aria-label="SETU AI Assistant"
+          title={t("assistant.name") || "SETU AI Assistant"}
+          aria-label={t("assistant.name") || "SETU AI Assistant"}
         >
           {isOpen ? <X className="w-6 h-6" /> : <Bot className="w-7 h-7 text-amber-300" />}
         </button>
@@ -209,10 +209,10 @@ export const SetuAssistant: React.FC = () => {
                   <h3 className="text-sm font-black tracking-tight">{t("assistant.name") || "SETU AI Assistant"}</h3>
                   <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                    Online
+                    {t("assistant.onlineStatus") || "Online"}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 font-medium">Verified Government Navigator</p>
+                <p className="text-[11px] text-slate-400 font-medium">{t("assistant.subtitle") || "Verified Government Navigator"}</p>
               </div>
             </div>
 
@@ -220,7 +220,7 @@ export const SetuAssistant: React.FC = () => {
               <button
                 type="button"
                 onClick={handleClearHistory}
-                title="Restart chat"
+                title={t("assistant.restartChat") || "Restart chat"}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition text-xs"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -228,7 +228,7 @@ export const SetuAssistant: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                title="Close"
+                title={t("common.close") || "Close"}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
               >
                 <X className="w-4 h-4" />
@@ -310,7 +310,7 @@ export const SetuAssistant: React.FC = () => {
                           }}
                           className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-xs transition flex items-center justify-center gap-1"
                         >
-                          <span>Explore Scheme</span>
+                          <span>{t("assistant.exploreScheme") || "Explore Scheme"}</span>
                           <ArrowRight className="w-3 h-3" />
                         </button>
 
@@ -321,7 +321,7 @@ export const SetuAssistant: React.FC = () => {
                             rel="noopener noreferrer"
                             className="py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] border border-slate-200 transition flex items-center gap-1"
                           >
-                            <span>Official Portal</span>
+                            <span>{t("assistant.officialPortal") || "Official Portal"}</span>
                             <ArrowUpRight className="w-3 h-3" />
                           </a>
                         )}
@@ -337,7 +337,7 @@ export const SetuAssistant: React.FC = () => {
                           {m.data.service.code}
                         </span>
                         <span className="text-[11px] text-emerald-700 font-bold">
-                          {m.data.service.estimatedDays} Days Processing
+                          {m.data.service.estimatedDays} {t("assistant.daysProcessing") || "Days Processing"}
                         </span>
                       </div>
 
@@ -352,7 +352,7 @@ export const SetuAssistant: React.FC = () => {
                             rel="noopener noreferrer"
                             className="w-full py-2 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5"
                           >
-                            <span>Visit Official Portal</span>
+                            <span>{t("assistant.visitOfficialPortal") || "Visit Official Portal"}</span>
                             <ArrowUpRight className="w-3.5 h-3.5" />
                           </a>
                         ) : (
@@ -364,7 +364,7 @@ export const SetuAssistant: React.FC = () => {
                             }}
                             className="w-full py-2 px-3 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5"
                           >
-                            <span>Apply for {m.data.service.name}</span>
+                            <span>{t("assistant.applyService") || "Apply for"} {m.data.service.name}</span>
                             <ArrowRight className="w-3.5 h-3.5" />
                           </button>
                         )}
@@ -377,11 +377,11 @@ export const SetuAssistant: React.FC = () => {
                     <div className="p-3.5 rounded-2xl bg-white border border-emerald-200 shadow-sm space-y-2 text-xs text-left">
                       <div className="flex items-center gap-1.5 text-emerald-800 font-bold">
                         <CheckSquare className="w-4 h-4" />
-                        <span>Document Checklist</span>
+                        <span>{t("assistant.documentChecklist") || "Document Checklist"}</span>
                       </div>
 
                       <div className="space-y-1">
-                        <span className="text-[10px] font-bold uppercase text-slate-400">Mandatory Proofs:</span>
+                        <span className="text-[10px] font-bold uppercase text-slate-400">{t("assistant.mandatoryProofs") || "Mandatory Proofs:"}</span>
                         {m.data.checklist.mandatoryDocuments.map((docName: string, dIdx: number) => (
                           <div key={dIdx} className="flex items-center gap-1.5 text-slate-700">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -417,7 +417,7 @@ export const SetuAssistant: React.FC = () => {
                 <div className="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
                   <Bot className="w-3.5 h-3.5 animate-bounce" />
                 </div>
-                <span>SETU Assistant is querying official knowledge base...</span>
+                <span>{t("assistant.thinkingMessage") || "SETU Assistant is querying official knowledge base..."}</span>
               </div>
             )}
 

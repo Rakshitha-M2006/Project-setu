@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import citizenApi, { ServiceApplicationItem } from "../../api/citizenApi";
 import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { StatusBadge } from "../../components/ui/StatusBadge";
+import useTrackingPolling from "../../hooks/useTrackingPolling";
 import { Alert } from "../../components/ui/Alert";
 import {
   ArrowLeft,
@@ -21,36 +23,48 @@ import {
 export const ApplicationDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const toast = useToast();
+  const { t } = useLanguage();
 
   const [application, setApplication] = useState<ServiceApplicationItem | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const fetchApplication = useCallback(async () => {
-    if (!id) return;
-    setIsLoading(true);
-    setErrorMsg(null);
-    try {
-      const response = await citizenApi.getApplicationById(id);
-      if (response.success && response.data) {
-        setApplication(response.data);
-      } else {
-        setErrorMsg("Could not find this service application in official records.");
+  const fetchApplication = useCallback(
+    async (isSilent = false) => {
+      if (!id) return;
+      if (!isSilent) {
+        setIsLoading(true);
+        setErrorMsg(null);
       }
-    } catch (err: any) {
-      const msg =
-        err.response?.status === 403
-          ? "You are not authorized to inspect this service application."
-          : err.response?.data?.message || "Failed to load application details.";
-      setErrorMsg(msg);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [id]);
+      try {
+        const response = await citizenApi.getApplicationById(id);
+        if (response.success && response.data) {
+          setApplication(response.data);
+        } else if (!isSilent) {
+          setErrorMsg("Could not find this service application in official records.");
+        }
+      } catch (err: any) {
+        if (!isSilent) {
+          const msg =
+            err.response?.status === 403
+              ? "You are not authorized to inspect this service application."
+              : err.response?.data?.message || "Failed to load application details.";
+          setErrorMsg(msg);
+        }
+      } finally {
+        if (!isSilent) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [id]
+  );
 
-  useEffect(() => {
-    fetchApplication();
-  }, [fetchApplication]);
+  // Auto-refresh tracking data every 5 seconds without full page reload
+  const { refreshNow, isRefreshing } = useTrackingPolling(
+    (isSilent) => fetchApplication(isSilent),
+    { intervalMs: 5000, enabled: !!id }
+  );
 
   const handleCopyAppNumber = () => {
     if (application?.applicationNumber) {
@@ -84,7 +98,7 @@ export const ApplicationDetailPage: React.FC = () => {
     return (
       <div className="max-w-4xl mx-auto py-20 text-center space-y-3">
         <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-xs text-slate-500">Retrieving service application records...</p>
+        <p className="text-xs text-slate-500">{t("applications.retrievingRecords")}</p>
       </div>
     );
   }
@@ -96,7 +110,7 @@ export const ApplicationDetailPage: React.FC = () => {
         <div className="text-center">
           <Link to="/citizen/applications">
             <Button variant="outline" size="sm" leftIcon={<ArrowLeft className="w-4 h-4" />}>
-              Back to My Applications
+              {t("applications.backToApplications")}
             </Button>
           </Link>
         </div>
@@ -129,7 +143,7 @@ export const ApplicationDetailPage: React.FC = () => {
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Application Reference:</span>
+              <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">{t("applications.applicationReference")}</span>
               <h1 className="text-xl sm:text-2xl font-black text-blue-700 tracking-tight font-mono">
                 {application.applicationNumber}
               </h1>
@@ -149,13 +163,18 @@ export const ApplicationDetailPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Live • 5s</span>
+          </span>
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchApplication}
-            leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+            onClick={() => refreshNow()}
+            isLoading={isRefreshing && !application}
+            leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />}
           >
-            Refresh Status
+            {t("common.refresh")}
           </Button>
         </div>
       </div>
@@ -166,7 +185,7 @@ export const ApplicationDetailPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-blue-700" />
-              <CardTitle className="text-sm">Scrutiny & Verification Stepper</CardTitle>
+              <CardTitle className="text-sm">{t("applications.stepperTitle") || "Scrutiny & Verification Stepper"}</CardTitle>
             </div>
             <span className="text-[11px] text-slate-500">
               Stage <strong>{currentStep}</strong> of <strong>6</strong>
@@ -239,7 +258,7 @@ export const ApplicationDetailPage: React.FC = () => {
           <div className="flex items-center gap-2 text-xs text-slate-600">
             <Clock className="w-4 h-4 text-amber-600" />
             <span>
-              Standard Turnaround: <strong>{application.service.estimatedProcessingDays} Working Days</strong>
+              {t("applications.standardTurnaround")} <strong>{application.service.estimatedProcessingDays} Working Days</strong>
             </span>
           </div>
         )}
@@ -247,7 +266,7 @@ export const ApplicationDetailPage: React.FC = () => {
 
       {application.officerRemarks && (
         <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-1 text-xs text-blue-950">
-          <span className="text-[10px] font-bold uppercase text-blue-800 block">Department Scrutiny Remarks:</span>
+          <span className="text-[10px] font-bold uppercase text-blue-800 block">{t("applications.scrutinyRemarks")}</span>
           <p className="leading-relaxed">{application.officerRemarks}</p>
         </div>
       )}
@@ -258,22 +277,22 @@ export const ApplicationDetailPage: React.FC = () => {
         <div className="lg:col-span-2 space-y-6">
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Applicant & Service Location Particulars</CardTitle>
+              <CardTitle className="text-base">{t("applications.particularsTitle") || "Applicant & Service Location Particulars"}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">Applicant Full Name</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">{t("applications.applicantFullName") || "Applicant Full Name"}</span>
                   <p className="font-bold text-slate-900">{formData.applicantName || application.citizen?.fullName}</p>
                 </div>
 
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">Contact Phone</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">{t("applications.contactPhone") || "Contact Phone"}</span>
                   <p className="font-mono font-semibold text-slate-900">{formData.contactPhone || application.citizen?.phone || "N/A"}</p>
                 </div>
 
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5 sm:col-span-2">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">Registered Address</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">{t("applications.registeredAddress") || "Registered Address"}</span>
                   <p className="font-medium text-slate-800">
                     {formData.addressLine || "Plot 42, Sector 5"}, {formData.locality || ""}, {formData.district || "Central Zone"} — PIN: {formData.pincode || "110001"}
                   </p>
@@ -281,14 +300,14 @@ export const ApplicationDetailPage: React.FC = () => {
 
                 {formData.propertyNumber && (
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">Property / Consumer Holding ID</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">{t("applications.holdingId") || "Property / Consumer Holding ID"}</span>
                     <p className="font-mono font-bold text-blue-700">{formData.propertyNumber}</p>
                   </div>
                 )}
 
                 {formData.servicePurpose && (
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">Connection Purpose</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">{t("applications.connectionPurpose") || "Connection Purpose"}</span>
                     <p className="font-semibold text-slate-800">{formData.servicePurpose}</p>
                   </div>
                 )}
@@ -296,7 +315,7 @@ export const ApplicationDetailPage: React.FC = () => {
 
               {formData.additionalRemarks && (
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">Applicant Remarks</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">{t("applications.applicantRemarks") || "Applicant Remarks"}</span>
                   <p className="text-slate-700">{formData.additionalRemarks}</p>
                 </div>
               )}
@@ -317,7 +336,7 @@ export const ApplicationDetailPage: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-2 text-xs">
               {!application.documents || application.documents.length === 0 ? (
-                <p className="text-slate-400 italic text-center py-4">No documents uploaded.</p>
+                <p className="text-slate-400 italic text-center py-4">{t("applications.noDocsUploaded") || "No documents uploaded."}</p>
               ) : (
                 application.documents.map((doc) => (
                   <div
@@ -347,7 +366,7 @@ export const ApplicationDetailPage: React.FC = () => {
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <Building className="w-4 h-4 text-blue-700" />
-                <CardTitle className="text-sm">Departmental Authority</CardTitle>
+                <CardTitle className="text-sm">{t("services.governingAuthority") || "Departmental Authority"}</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-2 text-xs">
@@ -357,7 +376,7 @@ export const ApplicationDetailPage: React.FC = () => {
               </div>
 
               <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase block">Scrutiny Officer</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">{t("applications.scrutinyOfficer") || "Scrutiny Officer"}</span>
                 <p className="text-slate-700">
                   {application.reviewingOfficer?.fullName || "Assigned during technical verification"}
                 </p>

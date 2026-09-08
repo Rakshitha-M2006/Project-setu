@@ -5,6 +5,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, EmptyTab
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import adminApi, { AdminUserItem } from "../../api/adminApi";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Users2,
   Search,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 
 export const AdminUsersPage: React.FC = () => {
+  const { t } = useLanguage();
   const toast = useToast();
   const [users, setUsers] = useState<AdminUserItem[]>([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
@@ -117,7 +119,7 @@ export const AdminUsersPage: React.FC = () => {
               onChange={(e) => setRoleFilter(e.target.value)}
               className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none"
             >
-              <option value="ALL">All Roles</option>
+              <option value="ALL">{t("admin.allRoles")}</option>
               <option value="CITIZEN">Citizen</option>
               <option value="OFFICER">Field Officer</option>
               <option value="SENIOR_OFFICER">Senior Officer</option>
@@ -129,7 +131,7 @@ export const AdminUsersPage: React.FC = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none"
             >
-              <option value="ALL">All Status</option>
+              <option value="ALL">{t("common.allStatuses")}</option>
               <option value="ACTIVE">Active Only</option>
               <option value="INACTIVE">Deactivated Only</option>
             </select>

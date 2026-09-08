@@ -5,6 +5,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, EmptyTab
 import { Modal } from "../../components/ui/Modal";
 import anomalyApi, { AnomalyRecordItem, AnomalyStatus } from "../../api/anomalyApi";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   AlertTriangle,
   Flame,
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 
 export const AdminAnomaliesPage: React.FC = () => {
+  const { t } = useLanguage();
   const toast = useToast();
   const [anomalies, setAnomalies] = useState<AnomalyRecordItem[]>([]);
   const [metrics, setMetrics] = useState({ total: 0, openCount: 0, criticalCount: 0 });
@@ -251,7 +253,7 @@ export const AdminAnomaliesPage: React.FC = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none"
             >
-              <option value="ALL">All Statuses</option>
+              <option value="ALL">{t("common.allStatuses")}</option>
               <option value="OPEN">OPEN Only</option>
               <option value="INVESTIGATING">INVESTIGATING Only</option>
               <option value="RESOLVED">RESOLVED Only</option>

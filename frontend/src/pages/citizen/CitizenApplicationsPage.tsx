@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
 import citizenApi, { ServiceApplicationItem } from "../../api/citizenApi";
+import useTrackingPolling from "../../hooks/useTrackingPolling";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../components/ui/Table";
@@ -24,23 +25,30 @@ export const CitizenApplicationsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const loadApplications = async () => {
-    setIsLoading(true);
-    try {
-      const response = await citizenApi.getMyApplications();
-      if (response.success && response.data) {
-        setApplications(response.data);
+  const loadApplications = useCallback(
+    async (isSilent = false) => {
+      if (!isSilent) setIsLoading(true);
+      try {
+        const response = await citizenApi.getMyApplications();
+        if (response.success && response.data) {
+          setApplications(response.data);
+        }
+      } catch {
+        if (!isSilent) {
+          toast.error(t("errors.serverError") || "Failed to load applications.", "Error");
+        }
+      } finally {
+        if (!isSilent) setIsLoading(false);
       }
-    } catch {
-      toast.error(t("errors.serverError") || "Failed to load applications.", "Error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    [t, toast]
+  );
 
-  useEffect(() => {
-    loadApplications();
-  }, []);
+  // Auto-refresh applications list every 5 seconds without full page reload
+  const { refreshNow, isRefreshing } = useTrackingPolling(
+    (isSilent) => loadApplications(isSilent),
+    { intervalMs: 5000 }
+  );
 
   const filteredApps = useMemo(() => {
     return applications.filter((app) => {
@@ -68,12 +76,16 @@ export const CitizenApplicationsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Live • 5s</span>
+          </span>
           <Button
             variant="outline"
             size="sm"
-            onClick={loadApplications}
-            isLoading={isLoading}
-            leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+            onClick={() => refreshNow()}
+            isLoading={isRefreshing && applications.length === 0}
+            leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />}
           >
             {t("common.refresh") || "Refresh"}
           </Button>
@@ -148,7 +160,7 @@ export const CitizenApplicationsPage: React.FC = () => {
                     {app.service?.department?.name || "General"}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge status={app.status} size="sm" />
+                    <StatusBadge status={app.status} type="application" size="sm" />
                   </TableCell>
                   <TableCell className="text-slate-500 text-xs">
                     {app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : "-"}

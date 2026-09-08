@@ -131,7 +131,7 @@ export const ServiceDetailPage: React.FC = () => {
         <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 flex items-start gap-3">
           <Info className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
           <div className="space-y-1 text-xs">
-            <h4 className="font-bold text-amber-900">Official Government Portal Redirection</h4>
+            <h4 className="font-bold text-amber-900">{t("services.externalRedirectTitle") || "Official Government Portal Redirection"}</h4>
             <p className="leading-relaxed">
               This statutory identity / registration service is processed directly by the designated central or state portal (
               <strong className="text-amber-950">{service.officialPortalUrl}</strong>). PROJECT SETU provides verified document checklists and direct navigation.
@@ -148,7 +148,7 @@ export const ServiceDetailPage: React.FC = () => {
               <Building className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">Governing Authority</span>
+              <span className="text-[10px] text-slate-400 uppercase font-bold block">{t("services.governingAuthority") || "Governing Authority"}</span>
               <p className="text-xs font-bold text-slate-900 line-clamp-1">{service.department?.name || service.category}</p>
             </div>
           </CardContent>
@@ -187,7 +187,7 @@ export const ServiceDetailPage: React.FC = () => {
         <div className="lg:col-span-2 space-y-6">
           <Card className="border-slate-200 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-base">Service Overview & Purpose</CardTitle>
+              <CardTitle className="text-base">{t("services.overviewPurpose") || "Service Overview & Purpose"}</CardTitle>
               <CardDescription className="text-xs">
                 Official public service description as cataloged by the government department
               </CardDescription>
@@ -212,7 +212,7 @@ export const ServiceDetailPage: React.FC = () => {
           {/* Step-by-Step Instructions */}
           <Card className="border-slate-200 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-base">Step-by-Step Application Workflow</CardTitle>
+              <CardTitle className="text-base">{t("services.workflowTitle") || "Step-by-Step Application Workflow"}</CardTitle>
               <CardDescription className="text-xs">
                 Procedural lifecycle from submission to departmental approval
               </CardDescription>
@@ -255,7 +255,7 @@ export const ServiceDetailPage: React.FC = () => {
                   3
                 </span>
                 <div>
-                  <p className="font-bold text-slate-900">Sanction / Certificate Issuance</p>
+                  <p className="font-bold text-slate-900">{t("services.issuanceStep") || "Sanction / Certificate Issuance"}</p>
                   <p className="text-slate-500">
                     Upon approval, the digital permit / connection sanction order or certificate is generated.
                   </p>
@@ -290,7 +290,7 @@ export const ServiceDetailPage: React.FC = () => {
 
               <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2 text-[11px] text-amber-900 mt-3">
                 <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                <p>Scanned files must be clear and under 10MB in size (PDF, JPG, PNG).</p>
+                <p>{t("services.docUploadGuidance") || "Scanned files must be clear and under 10MB in size (PDF, JPG, PNG)."}</p>
               </div>
 
               <div className="pt-3">

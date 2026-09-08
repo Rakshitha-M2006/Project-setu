@@ -5,6 +5,7 @@ import { Button } from "../../components/ui/Button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, EmptyTableState } from "../../components/ui/Table";
 import adminApi, { AdminOfficerItem } from "../../api/adminApi";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   ShieldCheck,
   Search,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 
 export const AdminOfficersPage: React.FC = () => {
+  const { t } = useLanguage();
   const toast = useToast();
   const [officers, setOfficers] = useState<AdminOfficerItem[]>([]);
   const [search, setSearch] = useState("");
@@ -62,7 +64,7 @@ export const AdminOfficersPage: React.FC = () => {
           isLoading={isLoading}
           leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
         >
-          Refresh Roster
+          {t("admin.refreshRoster")}
         </Button>
       </div>
 

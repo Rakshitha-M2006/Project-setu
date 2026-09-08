@@ -4,6 +4,7 @@ import { Button } from "../../components/ui/Button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, EmptyTableState } from "../../components/ui/Table";
 import analyticsApi, { AnalyticsOverviewData, AnalyticsFilterParams } from "../../api/analyticsApi";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   MonthlyTrendChart,
   PriorityDistributionChart,
@@ -23,6 +24,7 @@ import {
 } from "lucide-react";
 
 export const AdminAnalyticsPage: React.FC = () => {
+  const { t } = useLanguage();
   const toast = useToast();
   const [data, setData] = useState<AnalyticsOverviewData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -167,7 +169,7 @@ export const AdminAnalyticsPage: React.FC = () => {
               onChange={(e) => setFilters({ ...filters, status: e.target.value as any })}
               className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none"
             >
-              <option value="ALL">All Statuses</option>
+              <option value="ALL">{t("common.allStatuses")}</option>
               <option value="SUBMITTED">SUBMITTED</option>
               <option value="IN_PROGRESS">IN_PROGRESS</option>
               <option value="RESOLVED">RESOLVED</option>

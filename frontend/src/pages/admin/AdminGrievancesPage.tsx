@@ -6,6 +6,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, EmptyTab
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import adminApi from "../../api/adminApi";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Building,
   Search,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 
 export const AdminGrievancesPage: React.FC = () => {
+  const { t } = useLanguage();
   const toast = useToast();
   const [searchParams] = useSearchParams();
 
@@ -99,7 +101,7 @@ export const AdminGrievancesPage: React.FC = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none"
             >
-              <option value="ALL">All Statuses</option>
+              <option value="ALL">{t("common.allStatuses")}</option>
               <option value="SUBMITTED">SUBMITTED</option>
               <option value="AI_CLASSIFIED">AI CLASSIFIED</option>
               <option value="DEPARTMENT_ASSIGNED">DEPT ASSIGNED</option>
@@ -189,7 +191,7 @@ export const AdminGrievancesPage: React.FC = () => {
                       </TableCell>
 
                       <TableCell>
-                        <StatusBadge status={g.status} type="status" size="sm" />
+                        <StatusBadge status={g.status} type="grievance" size="sm" />
                       </TableCell>
 
                       <TableCell>

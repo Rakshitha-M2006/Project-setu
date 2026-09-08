@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import officerApi from "../../api/officerApi";
 import { GrievanceItem } from "../../api/citizenApi";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/Card";
@@ -30,6 +31,7 @@ export const OfficerGrievanceDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const toast = useToast();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const [grievance, setGrievance] = useState<GrievanceItem | null>(null);
@@ -188,7 +190,7 @@ export const OfficerGrievanceDetailPage: React.FC = () => {
     return (
       <div className="py-20 text-center space-y-3">
         <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-xs text-slate-500">Loading grievance inspection record...</p>
+        <p className="text-xs text-slate-500">{t("officer.loadingInspection")}</p>
       </div>
     );
   }
@@ -214,7 +216,7 @@ export const OfficerGrievanceDetailPage: React.FC = () => {
               <span className="font-mono text-sm font-black text-blue-700">
                 {grievance.trackingNumber}
               </span>
-              <StatusBadge status={grievance.status} size="sm" />
+              <StatusBadge status={grievance.status} type="grievance" size="sm" />
               <StatusBadge status={grievance.priority} type="priority" size="sm" />
             </div>
             <h1 className="text-lg sm:text-xl font-black text-slate-900 line-clamp-1 mt-0.5">
@@ -239,7 +241,7 @@ export const OfficerGrievanceDetailPage: React.FC = () => {
       <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Shield className="w-5 h-5 text-blue-700" />
-          <span className="text-xs font-bold text-slate-800">Investigation Action Center:</span>
+          <span className="text-xs font-bold text-slate-800">{t("officer.actionCenter")}</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -276,7 +278,7 @@ export const OfficerGrievanceDetailPage: React.FC = () => {
             className="text-xs font-semibold"
             leftIcon={<Upload className="w-3.5 h-3.5" />}
           >
-            Attach Evidence
+            {t("officer.attachEvidence")}
           </Button>
 
           {/* Request Info from Citizen */}
@@ -287,7 +289,7 @@ export const OfficerGrievanceDetailPage: React.FC = () => {
             className="text-xs font-semibold text-amber-800 border-amber-200 hover:bg-amber-50"
             leftIcon={<MessageSquare className="w-3.5 h-3.5" />}
           >
-            Request Citizen Info
+            {t("officer.requestCitizenInfo")}
           </Button>
         </div>
       </div>
@@ -299,15 +301,15 @@ export const OfficerGrievanceDetailPage: React.FC = () => {
           {/* Grievance Summary Card */}
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Grievance Case File</CardTitle>
+              <CardTitle className="text-base">{t("officer.caseFile")}</CardTitle>
               <CardDescription className="text-xs">
-                Official grievance particulars lodged by citizen
+                {t("officer.caseFileDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Detailed Complaint Description
+                  {t("officer.detailedDesc")}
                 </span>
                 <p className="text-xs sm:text-sm text-slate-800 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200 mt-1 whitespace-pre-wrap">
                   {grievance.description}
@@ -327,12 +329,12 @@ export const OfficerGrievanceDetailPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">Governing Department</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">{t("dashboard.assignedDepartment") || "Governing Department"}</span>
                   <p className="font-bold text-slate-900">{grievance.department?.name || "General Administration"}</p>
                 </div>
 
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">Problem Category</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">{t("grievances.problemCategory") || "Problem Category"}</span>
                   <p className="font-bold text-slate-900">{grievance.category?.name || "General Complaint"}</p>
                 </div>
               </div>
@@ -344,25 +346,25 @@ export const OfficerGrievanceDetailPage: React.FC = () => {
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4 text-blue-700" />
-                <CardTitle className="text-sm">Complainant Information</CardTitle>
+                <CardTitle className="text-sm">{t("officer.complainantInfo") || "Complainant Information"}</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">Citizen Name</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">{t("officer.citizenName") || "Citizen Name"}</span>
                   <p className="font-bold text-slate-900">{grievance.citizen?.fullName || "Citizen"}</p>
                 </div>
 
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">Phone Number</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">{t("common.phone") || "Phone Number"}</span>
                   <p className="font-mono font-semibold text-slate-900">
                     {grievance.citizen?.phone || "Not provided"}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">Email Address</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">{t("common.email") || "Email Address"}</span>
                   <p className="font-medium text-slate-700 truncate">{grievance.citizen?.email}</p>
                 </div>
               </div>
@@ -374,13 +376,13 @@ export const OfficerGrievanceDetailPage: React.FC = () => {
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-blue-700" />
-                <CardTitle className="text-sm">Incident Geography & Jurisdiction</CardTitle>
+                <CardTitle className="text-sm">{t("officer.incidentGeography") || "Incident Geography & Jurisdiction"}</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">Physical Address / Landmark</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">{t("grievances.physicalLandmark") || "Physical Address / Landmark"}</span>
                   <p className="font-semibold text-slate-800">{grievance.addressText || "Not specified"}</p>
                 </div>
 
@@ -393,7 +395,7 @@ export const OfficerGrievanceDetailPage: React.FC = () => {
               {grievance.location && (grievance.location.latitude || grievance.location.longitude) && (
                 <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-200 flex items-center justify-between text-xs text-blue-900">
                   <div className="space-y-0.5">
-                    <p className="font-bold">GPS Coordinates:</p>
+                    <p className="font-bold">{t("grievances.gpsAttached") || "GPS Coordinates:"}</p>
                     <p className="font-mono text-[11px]">
                       {grievance.location.latitude}, {grievance.location.longitude}
                     </p>
@@ -404,7 +406,7 @@ export const OfficerGrievanceDetailPage: React.FC = () => {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 font-bold text-blue-700 hover:underline text-xs bg-white px-3 py-1.5 rounded-lg border border-blue-200"
                   >
-                    <span>View on Maps</span>
+                    <span>{t("grievances.viewMap") || "View on Maps"}</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 </div>
@@ -457,7 +459,7 @@ export const OfficerGrievanceDetailPage: React.FC = () => {
         <div className="space-y-4">
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Redressal Action & Audit Log</CardTitle>
+              <CardTitle className="text-sm">{t("officer.redressalActionAudit") || "Redressal Action & Audit Log"}</CardTitle>
               <CardDescription className="text-xs">
                 Immutable chronological ledger of all actions
               </CardDescription>
@@ -474,7 +476,7 @@ export const OfficerGrievanceDetailPage: React.FC = () => {
                         <span className="font-bold text-xs text-slate-900">
                           {h.actionTaken.replace(/_/g, " ")}
                         </span>
-                        <StatusBadge status={h.newStatus} size="sm" />
+                        <StatusBadge status={h.newStatus} type="grievance" size="sm" />
                       </div>
 
                       {h.actor && (
@@ -617,7 +619,7 @@ export const OfficerGrievanceDetailPage: React.FC = () => {
               isLoading={isSubmittingAction}
               className="font-bold"
             >
-              Attach Evidence
+              {t("officer.attachEvidence")}
             </Button>
           </div>
         </form>

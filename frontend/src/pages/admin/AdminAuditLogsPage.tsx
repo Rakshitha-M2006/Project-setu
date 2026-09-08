@@ -6,6 +6,7 @@ import { StatusBadge } from "../../components/ui/StatusBadge";
 import { Modal } from "../../components/ui/Modal";
 import adminApi, { AdminAuditLogItem } from "../../api/adminApi";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   History,
   RefreshCw,
@@ -18,6 +19,7 @@ import {
 } from "lucide-react";
 
 export const AdminAuditLogsPage: React.FC = () => {
+  const { t } = useLanguage();
   const toast = useToast();
   const [logs, setLogs] = useState<AdminAuditLogItem[]>([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1 });
@@ -105,7 +107,7 @@ export const AdminAuditLogsPage: React.FC = () => {
           isLoading={isLoading}
           leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
         >
-          Refresh Ledger
+          {t("admin.refreshLedger")}
         </Button>
       </div>
 

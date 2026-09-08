@@ -4,6 +4,7 @@ import { Button } from "../../components/ui/Button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, EmptyTableState } from "../../components/ui/Table";
 import adminApi, { AdminAiMonitoringData } from "../../api/adminApi";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Cpu,
   RefreshCw,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 
 export const AdminAiMonitoringPage: React.FC = () => {
+  const { t } = useLanguage();
   const toast = useToast();
   const [aiData, setAiData] = useState<AdminAiMonitoringData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +46,7 @@ export const AdminAiMonitoringPage: React.FC = () => {
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <Cpu className="w-6 h-6 text-emerald-600" />
-            <span>AI Triage & NLP Classification Monitoring</span>
+            <span>{t("admin.aiMonitoringTitle")}</span>
           </h1>
           <p className="text-xs text-slate-500">
             Real-time inference metrics, category routing confidence scores, and automated SLA calculation accuracy

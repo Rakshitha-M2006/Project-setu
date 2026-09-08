@@ -118,9 +118,9 @@ export const Footer: React.FC = () => {
         </div>
 
         {/* 3. Bottom Copyright & Disclaimer */}
-        <div className="mt-12 pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+        <div className="mt-12 pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 text-center sm:text-left">
           <p>{t("footer.copyright") || "© 2026 PROJECT SETU. All Rights Reserved. Government Services & Grievance Management Platform."}</p>
-          <div className="flex items-center gap-6 text-[11px]">
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3 sm:gap-6 text-[11px]">
             <span className="hover:text-slate-300 cursor-pointer transition">
               {t("footer.terms") || "Terms of Service"}
             </span>

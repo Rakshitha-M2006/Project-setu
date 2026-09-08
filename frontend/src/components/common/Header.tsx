@@ -51,7 +51,7 @@ export const Header: React.FC = () => {
       </div>
 
       {/* 2. Top Accessibility & Official Govt Strip */}
-      <div className="bg-slate-900 text-slate-300 text-[11px] py-1 px-4 sm:px-8 flex justify-between items-center">
+      <div className="bg-slate-900 text-slate-300 text-[11px] py-1.5 px-4 sm:px-8 flex flex-col sm:flex-row sm:justify-between items-center gap-1 sm:gap-4 text-center sm:text-left">
         <div className="flex items-center gap-2">
           <span className="font-semibold text-white tracking-wider">{t("common.govtOfIndia")}</span>
           <span className="hidden md:inline text-slate-500">•</span>
@@ -66,20 +66,20 @@ export const Header: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo & Brand Identity */}
-          <Link to="/" className="flex items-center gap-3 group focus:outline-none">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-blue-800 to-indigo-950 flex items-center justify-center text-amber-400 shadow-md group-hover:scale-[1.02] transition">
+          <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group focus:outline-none min-w-0 flex-1 mr-2">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-blue-800 to-indigo-950 flex items-center justify-center text-amber-400 shadow-md group-hover:scale-[1.02] transition shrink-0">
               <Landmark className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight font-serif">
+            <div className="flex flex-col min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-base sm:text-xl font-black text-slate-900 tracking-tight font-serif truncate">
                   {t("common.appName")}
                 </span>
-                <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-200">
+                <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-200 shrink-0">
                   AI-GOV
                 </span>
               </div>
-              <span className="text-[10px] sm:text-xs text-slate-500 font-medium">
+              <span className="text-[10px] sm:text-xs text-slate-500 font-medium hidden sm:block truncate">
                 {t("common.appTagline")}
               </span>
             </div>
@@ -149,7 +149,7 @@ export const Header: React.FC = () => {
           </nav>
 
           {/* Mobile Menu Button & Language */}
-          <div className="md:hidden flex items-center gap-2">
+          <div className="md:hidden flex items-center gap-1.5 sm:gap-2 shrink-0">
             {isAuthenticated && <NotificationDropdown />}
             <LanguageSelectorDropdown variant="header" />
             <button

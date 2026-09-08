@@ -61,19 +61,19 @@ export const Modal: React.FC<ModalProps> = ({
       {/* Modal Card */}
       <div
         className={cn(
-          "relative w-full bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all z-10 flex flex-col max-h-[90vh]",
+          "relative w-full max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all z-10 flex flex-col max-h-[90vh]",
           sizes[size]
         )}
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-5 sm:p-6 border-b border-slate-100">
-          <div className="space-y-1">
-            <h2 className="text-lg font-bold text-slate-900 leading-tight">{title}</h2>
-            {description && <p className="text-xs sm:text-sm text-slate-500">{description}</p>}
+        <div className="flex items-start justify-between p-4 sm:p-6 border-b border-slate-100 gap-2">
+          <div className="space-y-1 min-w-0 flex-1">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-tight break-words">{title}</h2>
+            {description && <p className="text-xs sm:text-sm text-slate-500 break-words">{description}</p>}
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition shrink-0"
             aria-label="Close dialog"
           >
             <X className="w-5 h-5" />
@@ -81,11 +81,11 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         {/* Body */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-4">{children}</div>
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4">{children}</div>
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-3 p-4 sm:p-6 bg-slate-50 border-t border-slate-100">
+          <div className="flex flex-wrap items-center justify-end gap-3 p-4 sm:p-6 bg-slate-50 border-t border-slate-100">
             {footer}
           </div>
         )}

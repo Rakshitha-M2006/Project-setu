@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
@@ -14,6 +14,7 @@ import {
   Flame,
   ExternalLink,
 } from "lucide-react";
+import { useDashboardPolling } from "../../hooks/useDashboardPolling";
 
 export const SeniorOfficerDashboard: React.FC = () => {
   const toast = useToast();
@@ -26,23 +27,32 @@ export const SeniorOfficerDashboard: React.FC = () => {
   } | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const fetchOverdueSummary = async () => {
-    setIsLoading(true);
+  const fetchOverdueSummary = useCallback(async (isSilent = false) => {
+    if (!isSilent) {
+      setIsLoading(true);
+    }
     try {
       const response = await axiosClient.get<{ success: boolean; data: any }>("/sla/overdue-summary");
       if (response.data?.success) {
         setSummary(response.data.data);
       }
     } catch {
-      toast.error(t("errors.serverError") || "Failed to load SLA escalation command analytics.", "Error");
+      if (!isSilent) {
+        toast.error(t("errors.serverError") || "Failed to load SLA escalation command analytics.", "Error");
+      }
     } finally {
-      setIsLoading(false);
+      if (!isSilent) {
+        setIsLoading(false);
+      }
     }
-  };
+  }, [toast, t]);
 
-  useEffect(() => {
-    fetchOverdueSummary();
-  }, []);
+  // Automatic live refresh every 2 seconds without full-page reloads
+  const { refreshNow, isRefreshing } = useDashboardPolling(fetchOverdueSummary, {
+    intervalMs: 2000,
+    enabled: true,
+    pauseOnHidden: true,
+  });
 
   return (
     <div className="space-y-6">
@@ -63,13 +73,17 @@ export const SeniorOfficerDashboard: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Live • 2s</span>
+          </span>
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchOverdueSummary}
-            isLoading={isLoading}
+            onClick={() => refreshNow()}
+            isLoading={isLoading && !summary}
             className="bg-white/10 text-white border-white/20 hover:bg-white/20 text-xs"
-            leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+            leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />}
           >
             {t("common.refresh") || "Refresh Data"}
           </Button>
@@ -85,7 +99,7 @@ export const SeniorOfficerDashboard: React.FC = () => {
                 {t("common.statusEscalated") || "Escalated Cases"}
               </p>
               <p className="text-2xl font-black text-rose-600 font-mono">
-                {isLoading ? "..." : summary?.escalatedCount ?? 0}
+                {isLoading && !summary ? "..." : summary?.escalatedCount ?? 0}
               </p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
@@ -101,7 +115,7 @@ export const SeniorOfficerDashboard: React.FC = () => {
                 {t("officer.slaBreached") || "Overdue SLA Breaches"}
               </p>
               <p className="text-2xl font-black text-amber-600 font-mono">
-                {isLoading ? "..." : summary?.overdueCount ?? 0}
+                {isLoading && !summary ? "..." : summary?.overdueCount ?? 0}
               </p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
@@ -145,7 +159,7 @@ export const SeniorOfficerDashboard: React.FC = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
+            {isLoading && !summary ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-12 text-slate-500">
                   {t("common.loading") || "Loading escalated records..."}
@@ -170,10 +184,10 @@ export const SeniorOfficerDashboard: React.FC = () => {
                     {b.department?.name || "General"}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge status={b.status} size="sm" />
+                    <StatusBadge status={b.status} type="grievance" size="sm" />
                   </TableCell>
                   <TableCell>
-                    <StatusBadge status={b.priority} size="sm" />
+                    <StatusBadge status={b.priority} type="priority" size="sm" />
                   </TableCell>
                   <TableCell className="text-right">
                     <Link to={`/officer/grievances/${b.id}`}>

@@ -1,17 +1,24 @@
 import axios, { AxiosError } from "axios";
 import { ApiResponse } from "../types";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
-  "http://localhost:5000/api/v1";
+const getBaseUrl = (): string => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (import.meta.env.VITE_API_BASE_URL) return import.meta.env.VITE_API_BASE_URL;
+  // In browser, default to /api/v1 so Vite's proxy forwards to backend seamlessly without CORS or host mismatch
+  if (typeof window !== "undefined") {
+    return "/api/v1";
+  }
+  return "http://localhost:5000/api/v1";
+};
+
+const API_BASE_URL = getBaseUrl();
 
 export const axiosClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 15000,
+  timeout: 60000,
 });
 
 // Request Interceptor: Attach JWT Bearer Token & Preferred Language
@@ -25,6 +32,8 @@ axiosClient.interceptors.request.use(
       }
       config.headers["Accept-Language"] = lang;
       config.headers["X-Language"] = lang;
+      config.headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+      config.headers["Pragma"] = "no-cache";
     }
     return config;
   },

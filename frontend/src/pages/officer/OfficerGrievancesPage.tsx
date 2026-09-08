@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import officerApi, { OfficerGrievanceListResponse } from "../../api/officerApi";
 import { GrievanceItem } from "../../api/citizenApi";
 import { Card, CardContent } from "../../components/ui/Card";
@@ -20,6 +21,7 @@ import {
 
 export const OfficerGrievancesPage: React.FC = () => {
   const toast = useToast();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -107,7 +109,7 @@ export const OfficerGrievancesPage: React.FC = () => {
             Officer Grievance Queue & Backlog
           </h1>
           <p className="text-xs text-slate-500">
-            Investigate, claim, update, and resolve citizen public grievances within SLA
+            {t("officer.dashboardSubtitle")}
           </p>
         </div>
 
@@ -236,20 +238,20 @@ export const OfficerGrievancesPage: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Tracking #</TableHead>
-                <TableHead>Subject Title</TableHead>
+                <TableHead>{t("common.subject")}</TableHead>
                 <TableHead>Citizen / Complainant</TableHead>
                 <TableHead>Location / Pincode</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>SLA Target</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>{t("common.priority")}</TableHead>
+                <TableHead>{t("common.status")}</TableHead>
+                <TableHead>{t("common.slaTarget")}</TableHead>
+                <TableHead>{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-12 text-xs text-slate-400">
-                    Loading officer queue...
+                    {t("officer.loadingQueue")}
                   </TableCell>
                 </TableRow>
               ) : items.length === 0 ? (
@@ -294,7 +296,7 @@ export const OfficerGrievancesPage: React.FC = () => {
                         <StatusBadge status={g.priority} type="priority" size="sm" />
                       </TableCell>
                       <TableCell>
-                        <StatusBadge status={g.status} size="sm" />
+                        <StatusBadge status={g.status} type="grievance" size="sm" />
                       </TableCell>
                       <TableCell className="text-xs font-mono">
                         {g.slaDeadline ? (

@@ -19,6 +19,9 @@ const envSchema = z.object({
   INTERNAL_API_SECRET: z.string().default("setu_internal_microservice_secret_key_2026"),
   CORS_ORIGIN: z.string().default("http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173"),
   LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),
+  OLLAMA_BASE_URL: z.string().default("http://localhost:11434"),
+  OLLAMA_MODEL: z.string().default("gemma3"),
+  OLLAMA_TIMEOUT_MS: z.coerce.number().default(120000),
 });
 
 const parseEnv = () => {

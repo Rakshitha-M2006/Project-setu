@@ -66,6 +66,14 @@ export interface HealthCheckResponse {
       endpoint: string;
       responseTimeMs?: number;
     };
+    ollama?: {
+      status: "connected" | "unreachable";
+      model: string;
+      modelAvailable: boolean;
+      responseTimeMs?: number;
+      installedModels?: string[];
+      error?: string;
+    };
   };
 }
 

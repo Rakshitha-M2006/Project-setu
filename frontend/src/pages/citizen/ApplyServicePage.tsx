@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import citizenApi, {
   ServiceItem,
   ServiceRequirementsSchema,
@@ -44,13 +45,13 @@ interface UploadedDoc {
 }
 
 const STEPS = [
-  { id: 1, name: "Personal Details", icon: User },
-  { id: 2, name: "Contact Info", icon: Phone },
-  { id: 3, name: "Address", icon: MapPin },
-  { id: 4, name: "Service Details", icon: Briefcase },
-  { id: 5, name: "Documents", icon: FileText },
-  { id: 6, name: "Checklist", icon: CheckSquare },
-  { id: 7, name: "Declaration", icon: ShieldCheck },
+  { id: 1, key: "services.step1", name: "Personal Details", icon: User },
+  { id: 2, key: "services.step2", name: "Contact Info", icon: Phone },
+  { id: 3, key: "services.step3", name: "Address Details", icon: MapPin },
+  { id: 4, key: "services.step4", name: "Service Parameters", icon: Briefcase },
+  { id: 5, key: "services.step5", name: "Upload Documents", icon: FileText },
+  { id: 6, key: "services.step6", name: "Application Checklist", icon: CheckSquare },
+  { id: 7, key: "services.step7", name: "Declaration & Submit", icon: ShieldCheck },
 ];
 
 export const ApplyServicePage: React.FC = () => {
@@ -58,6 +59,7 @@ export const ApplyServicePage: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
   const toast = useToast();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -236,7 +238,7 @@ export const ApplyServicePage: React.FC = () => {
   const checklistItems = [
     {
       step: 1,
-      title: "Applicant Personal Details",
+      title: `Applicant ${t("services.step1")}`,
       isComplete: validateStep1(),
       description: "Full name, parentage/spouse, date of birth, and gender declaration.",
     },
@@ -401,7 +403,7 @@ export const ApplyServicePage: React.FC = () => {
               <CheckCircle2 className="w-10 h-10 text-white" />
             </div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight">
-              Service Application Registered!
+              {t("services.submitSuccess")}
             </h2>
             <p className="text-xs sm:text-sm text-emerald-100 max-w-md mx-auto">
               Your application has been queued for departmental scrutiny and digital processing.
@@ -412,7 +414,7 @@ export const ApplyServicePage: React.FC = () => {
             {/* Reference Number Card */}
             <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-2">
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                Official Application Reference Number
+                {t("services.appNumber")}
               </p>
               <div className="flex items-center justify-center gap-3">
                 <span className="font-mono text-xl sm:text-2xl font-black text-blue-700 tracking-wider">
@@ -427,7 +429,7 @@ export const ApplyServicePage: React.FC = () => {
                 </button>
               </div>
               <p className="text-[11px] text-slate-400">
-                Quote this reference number for all grievance escalations and officer correspondence.
+                {t("services.quoteRefPrompt")}
               </p>
             </div>
 
@@ -439,7 +441,7 @@ export const ApplyServicePage: React.FC = () => {
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Governing Department</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">{t("services.governingDepartment")}</span>
                 <p className="font-bold text-slate-900 line-clamp-1">{submittedApp.departmentName}</p>
               </div>
 
@@ -460,7 +462,7 @@ export const ApplyServicePage: React.FC = () => {
             <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
               <Link to={`/citizen/applications/${submittedApp.id}`} className="w-full sm:w-1/2">
                 <Button variant="primary" size="md" className="w-full font-bold shadow-md" rightIcon={<ExternalLink className="w-4 h-4" />}>
-                  Track Application Status
+                  {t("services.trackStatus")}
                 </Button>
               </Link>
 
@@ -561,14 +563,14 @@ export const ApplyServicePage: React.FC = () => {
                   {isCompleted ? "✓" : s.id}
                 </div>
                 <Icon className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">{s.name}</span>
+                <span className="hidden md:inline">{t(s.key)}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* STEP 1: Personal Details */}
+      {/* STEP 1: {t("services.step1")} */}
       {currentStep === 1 && (
         <Card className="border-slate-200 shadow-sm">
           <CardHeader>
@@ -576,7 +578,7 @@ export const ApplyServicePage: React.FC = () => {
               <User className="w-4 h-4" />
               <span>Step 1 of 7 — Applicant Identity</span>
             </div>
-            <CardTitle className="text-lg">Personal Details</CardTitle>
+            <CardTitle className="text-lg">{t("services.step1")}</CardTitle>
             <CardDescription className="text-xs">
               Provide legal identification matching your government ID proof.
             </CardDescription>
@@ -630,13 +632,13 @@ export const ApplyServicePage: React.FC = () => {
           </CardContent>
           <CardFooter className="flex justify-end gap-3 border-t border-slate-100 pt-4">
             <Button variant="primary" size="md" onClick={handleNext} rightIcon={<ChevronRight className="w-4 h-4" />}>
-              Next: Contact Info
+              Next: {t("services.step2")}
             </Button>
           </CardFooter>
         </Card>
       )}
 
-      {/* STEP 2: Contact Info */}
+      {/* STEP 2: {t("services.step2")} */}
       {currentStep === 2 && (
         <Card className="border-slate-200 shadow-sm">
           <CardHeader>
@@ -644,7 +646,7 @@ export const ApplyServicePage: React.FC = () => {
               <Phone className="w-4 h-4" />
               <span>Step 2 of 7 — Communication & Alerts</span>
             </div>
-            <CardTitle className="text-lg">Contact Information</CardTitle>
+            <CardTitle className="text-lg">{t("services.step2")}rmation</CardTitle>
             <CardDescription className="text-xs">
               Official status notifications and scrutiny updates will be dispatched to these coordinates.
             </CardDescription>
@@ -682,13 +684,13 @@ export const ApplyServicePage: React.FC = () => {
               Previous
             </Button>
             <Button variant="primary" size="md" onClick={handleNext} rightIcon={<ChevronRight className="w-4 h-4" />}>
-              Next: Address Details
+              Next: {t("services.step3")}
             </Button>
           </CardFooter>
         </Card>
       )}
 
-      {/* STEP 3: Address Details */}
+      {/* STEP 3: {t("services.step3")} */}
       {currentStep === 3 && (
         <Card className="border-slate-200 shadow-sm">
           <CardHeader>
@@ -696,7 +698,7 @@ export const ApplyServicePage: React.FC = () => {
               <MapPin className="w-4 h-4" />
               <span>Step 3 of 7 — Residential Jurisdiction</span>
             </div>
-            <CardTitle className="text-lg">Address Details</CardTitle>
+            <CardTitle className="text-lg">{t("services.step3")}</CardTitle>
             <CardDescription className="text-xs">
               Permanent residential address determines departmental jurisdiction and field verification.
             </CardDescription>
@@ -761,7 +763,7 @@ export const ApplyServicePage: React.FC = () => {
           <CardHeader>
             <div className="flex items-center gap-2 text-blue-600 font-bold text-xs uppercase tracking-wider">
               <Briefcase className="w-4 h-4" />
-              <span>Step 4 of 7 — Service Parameters</span>
+              <span>Step 4 of 7 — {t("services.step4")}</span>
             </div>
             <CardTitle className="text-lg">Service Specific Information</CardTitle>
             <CardDescription className="text-xs">
@@ -868,7 +870,7 @@ export const ApplyServicePage: React.FC = () => {
               Previous
             </Button>
             <Button variant="primary" size="md" onClick={handleNext} rightIcon={<ChevronRight className="w-4 h-4" />}>
-              Next: Upload Documents
+              Next: {t("services.step5")}
             </Button>
           </CardFooter>
         </Card>
@@ -1085,7 +1087,7 @@ export const ApplyServicePage: React.FC = () => {
         </Card>
       )}
 
-      {/* STEP 7: Statutory Declaration & Submit */}
+      {/* STEP 7: Statutory {t("services.step7")} */}
       {currentStep === 7 && (
         <Card className="border-slate-200 shadow-sm">
           <CardHeader>

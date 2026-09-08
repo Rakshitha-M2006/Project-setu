@@ -144,7 +144,7 @@ export const ServicesCatalogPage: React.FC = () => {
               : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
           }`}
         >
-          <span>All Services</span>
+          <span>{t("common.all") || "All"} {t("navigation.services") || "Services"}</span>
           <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/20">
             {services.length}
           </span>
@@ -159,7 +159,7 @@ export const ServicesCatalogPage: React.FC = () => {
           }`}
         >
           <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
-          <span>SETU Direct Apply (Internal 7-Step)</span>
+          <span>{t("services.directApplyTab") || "SETU Direct Apply (Internal 7-Step)"}</span>
           <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800">
             {services.filter((s) => !s.isExternal && s.applicationType !== "EXTERNAL").length}
           </span>
@@ -174,7 +174,7 @@ export const ServicesCatalogPage: React.FC = () => {
           }`}
         >
           <ExternalLink className="w-3.5 h-3.5 text-amber-500" />
-          <span>Official Portals (External)</span>
+          <span>{t("services.externalPortalsTab") || "Official Portals (External)"}</span>
           <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800">
             {services.filter((s) => s.isExternal || s.applicationType === "EXTERNAL").length}
           </span>
@@ -243,7 +243,7 @@ export const ServicesCatalogPage: React.FC = () => {
       ) : filteredServices.length === 0 ? (
         <Card className="border-slate-200 p-12 text-center space-y-3">
           <FileCheck2 className="w-12 h-12 text-slate-300 mx-auto" />
-          <h3 className="text-base font-bold text-slate-800">No Services Found</h3>
+          <h3 className="text-base font-bold text-slate-800">{t("services.noServices") || "No Services Found"}</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
             No public services match your selected category or search filters.
           </p>
@@ -321,7 +321,7 @@ export const ServicesCatalogPage: React.FC = () => {
                   {/* Eligibility Preview */}
                   {s.eligibilityCriteria && (
                     <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-200 text-xs text-blue-950 space-y-0.5">
-                      <span className="text-[10px] font-bold uppercase text-blue-800 block">Eligibility:</span>
+                      <span className="text-[10px] font-bold uppercase text-blue-800 block">{t("schemes.eligibilityCriteria") || "Eligibility:"}</span>
                       <p className="line-clamp-2 text-[11px] leading-relaxed">{s.eligibilityCriteria}</p>
                     </div>
                   )}
@@ -347,7 +347,7 @@ export const ServicesCatalogPage: React.FC = () => {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-xs transition"
                       >
-                        <span>Visit Portal</span>
+                        <span>{t("assistant.visitOfficialPortal") || "Visit Portal"}</span>
                         <ArrowUpRight className="w-3.5 h-3.5" />
                       </a>
                     ) : (

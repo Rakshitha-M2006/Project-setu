@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
@@ -12,6 +12,7 @@ import {
   RefreshCw,
   UserCheck,
 } from "lucide-react";
+import { useDashboardPolling } from "../../hooks/useDashboardPolling";
 
 export const AdminDashboard: React.FC = () => {
   const toast = useToast();
@@ -19,23 +20,32 @@ export const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadDashboardData = useCallback(async () => {
-    setIsLoading(true);
+  const loadDashboardData = useCallback(async (isSilent = false) => {
+    if (!isSilent) {
+      setIsLoading(true);
+    }
     try {
       const res = await adminApi.getDashboardStats();
       if (res.success && res.data) {
         setStats(res.data);
       }
     } catch {
-      toast.error(t("errors.serverError") || "Failed to load administration metrics.", "Dashboard Error");
+      if (!isSilent) {
+        toast.error(t("errors.serverError") || "Failed to load administration metrics.", "Dashboard Error");
+      }
     } finally {
-      setIsLoading(false);
+      if (!isSilent) {
+        setIsLoading(false);
+      }
     }
   }, [toast, t]);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
+  // Automatic live refresh every 2 seconds without full-page reloads
+  const { refreshNow, isRefreshing } = useDashboardPolling(loadDashboardData, {
+    intervalMs: 2000,
+    enabled: true,
+    pauseOnHidden: true,
+  });
 
   return (
     <div className="space-y-8">
@@ -56,12 +66,16 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="shrink-0 flex items-center gap-3">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Live • 2s</span>
+          </span>
           <Button
-            onClick={loadDashboardData}
-            isLoading={isLoading}
+            onClick={() => refreshNow()}
+            isLoading={isLoading && !stats}
             variant="outline"
             className="bg-white/10 hover:bg-white/20 text-white border-white/20 font-bold text-xs"
-            leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+            leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />}
           >
             {t("common.refresh") || "Refresh Metrics"}
           </Button>
@@ -82,7 +96,7 @@ export const AdminDashboard: React.FC = () => {
                 {t("admin.totalUsers") || "Citizens"}
               </p>
               <p className="text-2xl font-black text-slate-900 font-mono">
-                {isLoading ? "..." : stats?.totalCitizens ?? 0}
+                {isLoading && !stats ? "..." : stats?.totalCitizens ?? 0}
               </p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
@@ -98,7 +112,7 @@ export const AdminDashboard: React.FC = () => {
                 {t("admin.totalOfficers") || "Field Officers"}
               </p>
               <p className="text-2xl font-black text-indigo-600 font-mono">
-                {isLoading ? "..." : stats?.totalOfficers ?? 0}
+                {isLoading && !stats ? "..." : stats?.totalOfficers ?? 0}
               </p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center">
@@ -114,7 +128,7 @@ export const AdminDashboard: React.FC = () => {
                 {t("admin.totalDepartments") || "Departments"}
               </p>
               <p className="text-2xl font-black text-purple-600 font-mono">
-                {isLoading ? "..." : stats?.departments?.length ?? 0}
+                {isLoading && !stats ? "..." : stats?.departments?.length ?? 0}
               </p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center">
@@ -130,7 +144,7 @@ export const AdminDashboard: React.FC = () => {
                 {t("admin.activeAnomalies") || "Critical Grievances"}
               </p>
               <p className="text-2xl font-black text-rose-600 font-mono">
-                {isLoading ? "..." : stats?.criticalGrievances ?? 0}
+                {isLoading && !stats ? "..." : stats?.criticalGrievances ?? 0}
               </p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">

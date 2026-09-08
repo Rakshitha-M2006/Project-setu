@@ -134,9 +134,9 @@ export const SchemeEligibilityModal: React.FC<SchemeEligibilityModalProps> = ({
                     onChange={(e) => setGender(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none"
                   >
-                    <option value="MALE">Male</option>
-                    <option value="FEMALE">Female</option>
-                    <option value="OTHER">Other</option>
+                    <option value="MALE">{t("common.male") || "Male"}</option>
+                    <option value="FEMALE">{t("common.female") || "Female"}</option>
+                    <option value="OTHER">{t("common.other") || "Other"}</option>
                   </select>
                 </div>
               </div>
@@ -150,13 +150,13 @@ export const SchemeEligibilityModal: React.FC<SchemeEligibilityModalProps> = ({
                   onChange={(e) => setOccupation(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none"
                 >
-                  <option value="FARMER">Farmer / Cultivator / Agriculture</option>
-                  <option value="STREET_VENDOR">Street Vendor / Hawker / Artisan</option>
-                  <option value="STUDENT">Student / Scholar</option>
-                  <option value="BUSINESS">Micro / Small Business Owner</option>
-                  <option value="SELF_EMPLOYED">Self Employed / Daily Wage Earner</option>
-                  <option value="HOMEMAKER">Homemaker</option>
-                  <option value="SALARIED">Salaried Employee</option>
+                  <option value="FARMER">{t("schemes.occupationFarmer") || "Farmer / Cultivator / Agriculture"}</option>
+                  <option value="STREET_VENDOR">{t("schemes.occupationVendor") || "Street Vendor / Hawker / Artisan"}</option>
+                  <option value="STUDENT">{t("schemes.occupationStudent") || "Student / Scholar"}</option>
+                  <option value="BUSINESS">{t("schemes.occupationBusiness") || "Micro / Small Business Owner"}</option>
+                  <option value="SELF_EMPLOYED">{t("schemes.occupationSelfEmployed") || "Self Employed / Daily Wage Earner"}</option>
+                  <option value="HOMEMAKER">{t("schemes.occupationHomemaker") || "Homemaker"}</option>
+                  <option value="SALARIED">{t("schemes.occupationSalaried") || "Salaried Employee"}</option>
                 </select>
               </div>
 
@@ -251,7 +251,7 @@ export const SchemeEligibilityModal: React.FC<SchemeEligibilityModalProps> = ({
               {result.matchedCriteria.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Criteria Fulfilled:
+                    {t("schemes.criteriaFulfilled") || "Criteria Fulfilled:"}
                   </p>
                   <ul className="space-y-1 text-xs text-slate-600">
                     {result.matchedCriteria.map((c, i) => (
@@ -268,7 +268,7 @@ export const SchemeEligibilityModal: React.FC<SchemeEligibilityModalProps> = ({
               {result.unmetCriteria.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Attention Required:
+                    {t("schemes.attentionRequired") || "Attention Required:"}
                   </p>
                   <ul className="space-y-1 text-xs text-slate-600">
                     {result.unmetCriteria.map((c, i) => (
@@ -288,7 +288,7 @@ export const SchemeEligibilityModal: React.FC<SchemeEligibilityModalProps> = ({
                   onClick={handleReset}
                   className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
                 >
-                  Recalculate
+                  {t("schemes.recalculate") || "Recalculate"}
                 </button>
 
                 <div className="flex items-center gap-2">

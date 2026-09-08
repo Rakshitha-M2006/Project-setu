@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import officerApi, { OfficerProfileData } from "../../api/officerApi";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
@@ -17,6 +18,7 @@ import {
 
 export const OfficerProfilePage: React.FC = () => {
   const toast = useToast();
+  const { t } = useLanguage();
 
   const [profile, setProfile] = useState<OfficerProfileData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -79,7 +81,7 @@ export const OfficerProfilePage: React.FC = () => {
     return (
       <div className="py-20 text-center space-y-3">
         <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-xs text-slate-500">Loading officer profile...</p>
+        <p className="text-xs text-slate-500">{t("officer.loadingProfile")}</p>
       </div>
     );
   }
@@ -93,7 +95,7 @@ export const OfficerProfilePage: React.FC = () => {
             Officer Profile & Duty Credentials
           </h1>
           <p className="text-xs text-slate-500">
-            Official government field officer registry and jurisdictional settings
+            {t("officer.profileSubtitle")}
           </p>
         </div>
 
@@ -119,7 +121,7 @@ export const OfficerProfilePage: React.FC = () => {
                 {profile?.badgeNumber || "BADGE PENDING"}
               </span>
               <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                VERIFIED OFFICER
+                {t("officer.verifiedOfficer")}
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white">{profile?.user.fullName}</h2>
@@ -132,7 +134,7 @@ export const OfficerProfilePage: React.FC = () => {
         <div className="flex items-center gap-6 sm:border-l sm:border-slate-800 sm:pl-6 text-center">
           <div>
             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
-              Active Cases
+              {t("officer.resolvedCases")}
             </span>
             <span className="text-2xl font-mono font-black text-amber-400">
               {profile?.activeGrievanceCount || 0}
@@ -153,7 +155,7 @@ export const OfficerProfilePage: React.FC = () => {
       <form onSubmit={handleSaveProfile} className="space-y-6">
         <Card className="border-slate-200 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-base">Officer Information & Jurisdictional Settings</CardTitle>
+            <CardTitle className="text-base">{t("officer.profileTitle") || "Officer Information & Jurisdictional Settings"}</CardTitle>
             <CardDescription className="text-xs">
               Manage your availability status, official phone number, and municipal ward coverage
             </CardDescription>
@@ -162,7 +164,7 @@ export const OfficerProfilePage: React.FC = () => {
             {/* Duty Availability Switch */}
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-4">
               <div className="space-y-0.5">
-                <p className="text-sm font-bold text-slate-900">Duty Availability Status</p>
+                <p className="text-sm font-bold text-slate-900">{t("officer.availabilityStatus")}</p>
                 <p className="text-xs text-slate-500">
                   When enabled, new AI-routed department grievances may be assigned to your queue
                 </p>
@@ -222,19 +224,19 @@ export const OfficerProfilePage: React.FC = () => {
             <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-200 space-y-2 text-xs">
               <div className="flex items-center gap-2 text-blue-900 font-bold">
                 <Building className="w-4 h-4 text-blue-700" />
-                <span>Department Policy Standards</span>
+                <span>{t("officer.policyStandards") || "Department Policy Standards"}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-slate-700 pt-1">
                 <div>
-                  <span className="text-[10px] text-slate-400 font-bold block uppercase">Department Name</span>
+                  <span className="text-[10px] text-slate-400 font-bold block uppercase">{t("common.department") || "Department Name"}</span>
                   <span className="font-semibold">{profile?.department.name}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 font-bold block uppercase">Department Code</span>
+                  <span className="text-[10px] text-slate-400 font-bold block uppercase">{t("officer.deptCode") || "Department Code"}</span>
                   <span className="font-mono font-bold text-blue-700">{profile?.department.code}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 font-bold block uppercase">Standard Resolution SLA</span>
+                  <span className="text-[10px] text-slate-400 font-bold block uppercase">{t("officer.standardSLA") || "Standard Resolution SLA"}</span>
                   <span className="font-bold text-emerald-700">{profile?.department.defaultSlaHours || 48} Hours</span>
                 </div>
               </div>

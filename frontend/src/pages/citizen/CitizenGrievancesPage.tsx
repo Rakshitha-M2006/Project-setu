@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
 import citizenApi, { GrievanceItem } from "../../api/citizenApi";
+import useTrackingPolling from "../../hooks/useTrackingPolling";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../components/ui/Table";
@@ -25,23 +26,30 @@ export const CitizenGrievancesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const loadGrievances = async () => {
-    setIsLoading(true);
-    try {
-      const response = await citizenApi.getMyGrievances();
-      if (response.success && response.data) {
-        setGrievances(response.data);
+  const loadGrievances = useCallback(
+    async (isSilent = false) => {
+      if (!isSilent) setIsLoading(true);
+      try {
+        const response = await citizenApi.getMyGrievances();
+        if (response.success && response.data) {
+          setGrievances(response.data);
+        }
+      } catch {
+        if (!isSilent) {
+          toast.error(t("errors.serverError") || "Failed to load grievances.", "Error");
+        }
+      } finally {
+        if (!isSilent) setIsLoading(false);
       }
-    } catch {
-      toast.error(t("errors.serverError") || "Failed to load grievances.", "Error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    [t, toast]
+  );
 
-  useEffect(() => {
-    loadGrievances();
-  }, []);
+  // Auto-refresh grievances list every 5 seconds without full page reload
+  const { refreshNow, isRefreshing } = useTrackingPolling(
+    (isSilent) => loadGrievances(isSilent),
+    { intervalMs: 5000 }
+  );
 
   const filteredGrievances = useMemo(() => {
     return grievances.filter((g) => {
@@ -118,12 +126,16 @@ export const CitizenGrievancesPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Live • 5s</span>
+          </span>
           <Button
             variant="outline"
             size="sm"
-            onClick={loadGrievances}
-            isLoading={isLoading}
-            leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+            onClick={() => refreshNow()}
+            isLoading={isRefreshing && grievances.length === 0}
+            leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />}
           >
             {t("common.refresh") || "Refresh"}
           </Button>
@@ -143,9 +155,9 @@ export const CitizenGrievancesPage: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2">
               {[
                 { id: "ALL", label: t("common.all") || "All" },
-                { id: "PENDING", label: t("dashboard.pendingGrievances") || "Under Review" },
-                { id: "IN_PROGRESS", label: t("dashboard.inProgressGrievances") || "In Progress" },
-                { id: "RESOLVED", label: t("dashboard.resolvedGrievances") || "Resolved" },
+                { id: "PENDING", label: t("dashboard.underReview") || "Under Review" },
+                { id: "IN_PROGRESS", label: t("dashboard.actionInProgress") || "Action In Progress" },
+                { id: "RESOLVED", label: t("dashboard.resolved") || "Resolved" },
                 { id: "ESCALATED", label: t("common.statusEscalated") || "Escalated" },
               ].map((tab) => (
                 <button
@@ -227,10 +239,10 @@ export const CitizenGrievancesPage: React.FC = () => {
                     {g.department?.name || "AI Routing..."}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge status={g.status} size="sm" />
+                    <StatusBadge status={g.status} type="grievance" size="sm" />
                   </TableCell>
                   <TableCell>
-                    <StatusBadge status={g.priority} size="sm" />
+                    <StatusBadge status={g.priority} type="priority" size="sm" />
                   </TableCell>
                   <TableCell className="text-slate-500 text-xs">
                     {new Date(g.createdAt).toLocaleDateString()}

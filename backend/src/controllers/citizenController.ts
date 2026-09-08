@@ -23,6 +23,7 @@ export class CitizenController {
         activeApplications,
         recentGrievances,
         notifications,
+        recentApplications,
       ] = await Promise.all([
         // 1. Total Grievances
         prisma.grievance.count({
@@ -87,6 +88,16 @@ export class CitizenController {
           orderBy: { createdAt: "desc" },
           take: 5,
         }),
+        // 8. Recent Service Applications
+        prisma.serviceApplication.findMany({
+          where: { citizenId },
+          include: {
+            service: { select: { id: true, name: true, code: true, estimatedProcessingDays: true } },
+            department: { select: { id: true, name: true, code: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        }),
       ]);
 
       const unreadNotificationsCount = notifications.filter((n) => !n.isRead).length;
@@ -104,6 +115,7 @@ export class CitizenController {
           },
           recentGrievances,
           recentNotifications: notifications,
+          recentApplications,
         },
         "Citizen dashboard statistics retrieved successfully"
       );

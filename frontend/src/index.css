@@ -13,10 +13,23 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   body {
     @apply bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col antialiased selection:bg-blue-100 selection:text-blue-900;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-wrap: break-word;
+  }
+
+  #root {
+    max-width: 100%;
+    overflow-x: hidden;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
   }
 
   /* Accessible Focus Rings */

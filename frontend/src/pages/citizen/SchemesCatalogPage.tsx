@@ -61,7 +61,7 @@ export const SchemesCatalogPage: React.FC = () => {
         <div className="relative z-10 max-w-3xl space-y-3">
           <div className="inline-flex items-center gap-2 bg-amber-400/20 text-amber-300 text-xs font-bold px-3 py-1 rounded-full border border-amber-300/30">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>National Welfare Schemes Repository</span>
+            <span>{t("schemes.catalogTitle") || "National Welfare Schemes Repository"}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight font-serif">
             {t("schemes.title")}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import citizenApi from "../../api/citizenApi";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
@@ -39,6 +40,7 @@ interface AttachmentFile {
 
 export const NewGrievancePage: React.FC = () => {
   const toast = useToast();
+  const { t } = useLanguage();
   const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
@@ -93,19 +95,25 @@ export const NewGrievancePage: React.FC = () => {
   } | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchDepartments = async () => {
       try {
         const response = await citizenApi.getDepartments();
-        if (response.success && response.data) {
+        if (isMounted && response.success && response.data) {
           setDepartments(response.data);
         }
       } catch {
-        toast.error("Failed to load departments catalog.", "Error");
+        if (isMounted) {
+          toast.error("Failed to load departments catalog.", "Error");
+        }
       }
     };
 
     fetchDepartments();
-  }, [toast]);
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Available categories for selected department
   const selectedDept = departments.find((d) => d.id === departmentId);
@@ -308,7 +316,7 @@ export const NewGrievancePage: React.FC = () => {
               <CheckCircle2 className="w-10 h-10 text-white" />
             </div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight">
-              Grievance Successfully Registered!
+              {t("grievances.successTitle")}
             </h2>
             <p className="text-xs sm:text-sm text-emerald-100 max-w-md mx-auto">
               Your complaint has been automatically routed to the responsible department with resolution tracking.
@@ -319,7 +327,7 @@ export const NewGrievancePage: React.FC = () => {
             {/* Reference Number Card */}
             <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-2">
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                Official Reference & Tracking Number
+                {t("grievances.trackingNumber")}
               </p>
               <div className="flex items-center justify-center gap-3">
                 <span className="font-mono text-xl sm:text-2xl font-black text-blue-700 tracking-wider">
@@ -341,22 +349,22 @@ export const NewGrievancePage: React.FC = () => {
             {/* Grievance Summary Information for Citizen */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Subject</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">{t("common.subject")}</span>
                 <p className="font-bold text-slate-900 line-clamp-2">{submittedGrievance.title}</p>
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Category</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">{t("common.category")}</span>
                 <p className="font-bold text-slate-900 line-clamp-1">{submittedGrievance.category}</p>
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Assigned Department</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">{t("dashboard.assignedDepartment")}</span>
                 <p className="font-bold text-slate-900">{submittedGrievance.departmentName}</p>
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Assigned Priority</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">{t("dashboard.assignedPriority")}</span>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold text-xs">
                   {submittedGrievance.priority}
                 </span>
@@ -375,13 +383,13 @@ export const NewGrievancePage: React.FC = () => {
             <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
               <Link to={`/citizen/grievances/${submittedGrievance.id}`} className="w-full sm:w-1/2">
                 <Button variant="primary" size="md" className="w-full font-bold shadow-md" rightIcon={<ExternalLink className="w-4 h-4" />}>
-                  Track Grievance Live
+                  {t("grievances.trackLive")}
                 </Button>
               </Link>
 
               <Link to="/citizen/grievances" className="w-full sm:w-1/2">
                 <Button variant="outline" size="md" className="w-full font-semibold">
-                  View All My Grievances
+                  {t("navigation.grievances")}
                 </Button>
               </Link>
             </div>
@@ -406,7 +414,7 @@ export const NewGrievancePage: React.FC = () => {
                 }}
                 className="text-xs text-blue-700 hover:text-blue-900 font-bold hover:underline"
               >
-                + Lodge Another Public Grievance
+                {t("grievances.lodgeAnother") || "+ Lodge Another Public Grievance"}
               </button>
             </div>
           </CardContent>
@@ -440,10 +448,10 @@ export const NewGrievancePage: React.FC = () => {
           </Link>
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Lodge Public Grievance
+              {t("grievances.title")}
             </h1>
             <p className="text-xs text-slate-500">
-              Submit your complaint directly to municipal and state government departments
+              {t("grievances.newSubtitle") || "Submit your complaint directly to municipal and state government departments"}
             </p>
           </div>
         </div>
@@ -455,7 +463,7 @@ export const NewGrievancePage: React.FC = () => {
           <ShieldCheck className="w-5 h-5" />
         </div>
         <div className="space-y-1 text-xs leading-relaxed">
-          <h4 className="font-bold text-sm text-white">Guaranteed Citizen SLA Oversight</h4>
+          <h4 className="font-bold text-sm text-white">{t("grievances.slaOversight") || "Guaranteed Citizen SLA Oversight"}</h4>
           <p className="text-blue-200">
             Every submission generates a unique human-readable tracking token (e.g.,{" "}
             <code className="bg-blue-950 px-1.5 py-0.5 rounded text-amber-300 font-mono text-[11px]">
@@ -475,7 +483,7 @@ export const NewGrievancePage: React.FC = () => {
       {/* 3. Grievance Form */}
       <Card className="border-slate-200 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base">Grievance Registration Form</CardTitle>
+          <CardTitle className="text-base">{t("grievances.formTitle") || "Grievance Registration Form"}</CardTitle>
           <CardDescription>
             Provide accurate details to assist jurisdictional field officers in prompt investigation & resolution
           </CardDescription>
@@ -559,7 +567,7 @@ export const NewGrievancePage: React.FC = () => {
               <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200 flex items-start gap-2.5 text-xs text-blue-900">
                 <Info className="w-4 h-4 text-blue-700 shrink-0 mt-0.5" />
                 <p className="leading-relaxed">
-                  <strong>Why Geo-tag?</strong> Attaching GPS coordinates enables departmental field teams to locate the problem site (e.g. leaking pipeline, road pothole, damaged street lamp) without delays. If GPS is unavailable, please provide the physical address below.
+                  <strong>{t("grievances.whyGeotag") || "Why Geo-tag?"}</strong> Attaching GPS coordinates enables departmental field teams to locate the problem site (e.g. leaking pipeline, road pothole, damaged street lamp) without delays. If GPS is unavailable, please provide the physical address below.
                 </p>
               </div>
 
@@ -588,7 +596,7 @@ export const NewGrievancePage: React.FC = () => {
                     }}
                     className="text-rose-600 hover:underline font-bold text-xs"
                   >
-                    Clear GPS
+                    {t("grievances.clearGps")}
                   </button>
                 </div>
               )}
@@ -793,8 +801,8 @@ export const NewGrievancePage: React.FC = () => {
                   className="p-6 text-center border-2 border-dashed border-slate-200 rounded-xl bg-white hover:border-blue-400 hover:bg-blue-50/20 cursor-pointer transition"
                 >
                   <ImageIcon className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                  <p className="text-xs font-bold text-slate-700">Click to attach photo evidence or documentation</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">High-resolution photos accelerate departmental verification.</p>
+                  <p className="text-xs font-bold text-slate-700">{t("grievances.clickToAttach") || "Click to attach photo evidence or documentation"}</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">{t("grievances.photoDesc") || "High-resolution photos accelerate departmental verification."}</p>
                 </div>
               )}
             </div>
@@ -823,7 +831,7 @@ export const NewGrievancePage: React.FC = () => {
                 className="font-bold shadow-md px-8"
                 rightIcon={<Send className="w-4 h-4" />}
               >
-                Register Grievance
+                {t("grievances.submitBtn")}
               </Button>
             </div>
           </form>

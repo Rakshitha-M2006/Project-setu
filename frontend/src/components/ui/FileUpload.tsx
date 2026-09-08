@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { useLanguage } from "../../context/LanguageContext";
 import { useToast } from "../../context/ToastContext";
 import { uploadApi, UploadedFileResult } from "../../api/uploadApi";
 import {
@@ -34,6 +35,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   required = false,
 }) => {
   const toast = useToast();
+  const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -158,7 +160,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 <span>•</span>
                 <span className="text-emerald-700 font-bold flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" />
-                  Secured & Stored
+                  {t("common.securedAndStored") || "Secured & Stored"}
                 </span>
               </div>
             </div>
@@ -169,7 +171,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={disabled || isUploading}
-              title="Replace file"
+              title={t("common.replaceFile") || "Replace file"}
               className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition text-xs"
             >
               <RefreshCw className="w-4 h-4" />
@@ -179,7 +181,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               type="button"
               onClick={handleRemove}
               disabled={disabled || isUploading}
-              title="Remove file"
+              title={t("common.removeFile") || "Remove file"}
               className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition text-xs"
             >
               <Trash2 className="w-4 h-4" />
@@ -205,7 +207,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             <div className="space-y-2 w-full max-w-xs">
               <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
               <p className="text-xs font-bold text-slate-800">
-                Encrypting & Uploading... ({uploadProgress}%)
+                {t("common.uploading") || "Encrypting & Uploading..."} ({uploadProgress}%)
               </p>
               <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                 <div
@@ -221,7 +223,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               </div>
               <div className="space-y-0.5">
                 <p className="text-xs font-bold text-slate-800">
-                  <span className="text-blue-700 underline">Click to upload document</span> or drag & drop
+                  <span className="text-blue-700 underline">{t("common.clickToUpload") || "Click to upload document"}</span> {t("common.orDragAndDrop") || "or drag & drop"}
                 </p>
                 <p className="text-[11px] text-slate-400">{description}</p>
               </div>

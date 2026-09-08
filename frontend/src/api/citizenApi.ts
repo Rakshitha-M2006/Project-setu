@@ -94,6 +94,7 @@ export interface CitizenDashboardStats {
   };
   recentGrievances: GrievanceItem[];
   recentNotifications: NotificationItem[];
+  recentApplications?: ServiceApplicationItem[];
 }
 
 export interface SchemeItem {
@@ -303,7 +304,7 @@ export const citizenApi = {
         status?: GrievanceStatus;
         slaDeadline?: string;
       }>
-    >("/grievances", payload);
+    >("/grievances", payload, { timeout: 90000 });
     return response.data;
   },
 

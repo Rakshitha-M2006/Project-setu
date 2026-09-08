@@ -46,7 +46,7 @@ export const LandingPage: React.FC = () => {
             <Link to="/citizen/schemes">
               <Button size="lg" variant="outline" className="bg-emerald-800/60 border-emerald-500/40 text-emerald-200 hover:bg-emerald-700/80 font-semibold px-6 flex items-center gap-2">
                 <Layers className="w-4 h-4" />
-                <span>{t("home.hero.exploreSchemesBtn") || "Explore Government Schemes"}</span>
+                <span>{t("home.hero.exploreSchemesBtn")}</span>
               </Button>
             </Link>
             <Link to="/login">

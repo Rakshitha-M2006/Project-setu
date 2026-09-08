@@ -3,6 +3,7 @@ import { APP_METADATA } from "../config/constants";
 import { env } from "../config/env";
 import { healthRepository } from "../repositories/healthRepository";
 import { AiServiceClient } from "./aiServiceClient";
+import { OllamaService } from "./ollamaService";
 import { HealthCheckResponse } from "../types";
 
 export class HealthService {
@@ -35,9 +36,12 @@ export class HealthService {
     const isAiOnline = await AiServiceClient.checkHealth();
     const aiResponseTimeMs = Date.now() - aiStartTime;
 
+    // Check Ollama Health
+    const ollamaStatus = await OllamaService.checkHealth();
+
     // Determine overall service status
-    const isHealthy = dbResult.connected && isAiOnline;
-    const isDegraded = !dbResult.connected || !isAiOnline;
+    const isHealthy = dbResult.connected && (isAiOnline || ollamaStatus.status === "connected");
+    const isDegraded = !dbResult.connected || (!isAiOnline && ollamaStatus.status !== "connected");
 
     const status: "healthy" | "degraded" = isHealthy ? "healthy" : "degraded";
 
@@ -72,6 +76,14 @@ export class HealthService {
           status: isAiOnline ? "connected" : "unreachable",
           endpoint: env.AI_SERVICE_URL,
           responseTimeMs: isAiOnline ? aiResponseTimeMs : undefined,
+        },
+        ollama: {
+          status: ollamaStatus.status,
+          model: ollamaStatus.model,
+          modelAvailable: ollamaStatus.modelAvailable,
+          responseTimeMs: ollamaStatus.responseTimeMs,
+          installedModels: ollamaStatus.installedModels,
+          error: ollamaStatus.error,
         },
       },
     };

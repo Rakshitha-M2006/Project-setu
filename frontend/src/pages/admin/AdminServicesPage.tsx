@@ -5,6 +5,7 @@ import { Button } from "../../components/ui/Button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, EmptyTableState } from "../../components/ui/Table";
 import citizenApi, { ServiceItem } from "../../api/citizenApi";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Briefcase,
   Search,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 
 export const AdminServicesPage: React.FC = () => {
+  const { t } = useLanguage();
   const toast = useToast();
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [search, setSearch] = useState("");
@@ -47,7 +49,7 @@ export const AdminServicesPage: React.FC = () => {
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <Briefcase className="w-6 h-6 text-purple-700" />
-            <span>Government Public Services Master Catalog</span>
+            <span>{t("admin.servicesMaster")}</span>
           </h1>
           <p className="text-xs text-slate-500">
             Publish citizen service schemes, statutory processing timelines, and scrutiny document requirements
@@ -61,7 +63,7 @@ export const AdminServicesPage: React.FC = () => {
           isLoading={isLoading}
           leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
         >
-          Refresh Catalog
+          {t("admin.refreshCatalog")}
         </Button>
       </div>
 

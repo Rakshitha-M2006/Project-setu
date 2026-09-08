@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
 import officerApi, { OfficerDashboardStats } from "../../api/officerApi";
+import { useDashboardPolling } from "../../hooks/useDashboardPolling";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { StatusBadge } from "../../components/ui/StatusBadge";
@@ -27,25 +28,34 @@ export const OfficerDashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<boolean>(false);
 
-  const fetchDashboardData = async () => {
-    setIsLoading(true);
+  const fetchDashboardData = useCallback(async (isSilent = false) => {
+    if (!isSilent) {
+      setIsLoading(true);
+    }
     try {
       const response = await officerApi.getDashboardStats();
       if (response.success && response.data) {
         setStats(response.data);
-      } else {
+      } else if (!isSilent) {
         toast.error(t("errors.serverError") || "Failed to load officer dashboard statistics.", "Error");
       }
     } catch {
-      toast.error(t("errors.networkError") || "Network error while connecting to officer portal.", "Connection Error");
+      if (!isSilent) {
+        toast.error(t("errors.networkError") || "Network error while connecting to officer portal.", "Connection Error");
+      }
     } finally {
-      setIsLoading(false);
+      if (!isSilent) {
+        setIsLoading(false);
+      }
     }
-  };
+  }, [t, toast]);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  // Automatic live refresh every 2 seconds without full-page reloads
+  const { refreshNow, isRefreshing } = useDashboardPolling(fetchDashboardData, {
+    intervalMs: 2000,
+    enabled: true,
+    pauseOnHidden: true,
+  });
 
   const handleToggleAvailability = async () => {
     if (!stats) return;
@@ -122,13 +132,18 @@ export const OfficerDashboardPage: React.FC = () => {
             </span>
           </button>
 
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Live • 2s</span>
+          </span>
+
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchDashboardData}
-            isLoading={isLoading}
+            onClick={() => refreshNow()}
+            isLoading={isLoading && !stats}
             className="bg-white/10 text-white border-white/20 hover:bg-white/20 text-xs"
-            leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+            leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />}
           >
             {t("common.refresh") || "Refresh"}
           </Button>
@@ -231,7 +246,7 @@ export const OfficerDashboardPage: React.FC = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
+            {isLoading && !stats ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-12 text-slate-500">
                   {t("common.loading") || "Loading complaints..."}
@@ -253,10 +268,10 @@ export const OfficerDashboardPage: React.FC = () => {
                     {g.title}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge status={g.status} size="sm" />
+                    <StatusBadge status={g.status} type="grievance" size="sm" />
                   </TableCell>
                   <TableCell>
-                    <StatusBadge status={g.priority} size="sm" />
+                    <StatusBadge status={g.priority} type="priority" size="sm" />
                   </TableCell>
                   <TableCell className="text-slate-500 text-xs">
                     {new Date(g.createdAt).toLocaleDateString()}

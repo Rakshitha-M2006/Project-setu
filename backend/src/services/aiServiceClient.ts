@@ -2,11 +2,12 @@ import axios from "axios";
 import { env } from "../config/env";
 import { logger } from "../utils/logger";
 import { GrievanceAIAnalysisResult } from "../types";
+import { OllamaService } from "./ollamaService";
 
 export class AiServiceClient {
   private static client = axios.create({
     baseURL: env.AI_SERVICE_URL,
-    timeout: env.AI_REQUEST_TIMEOUT_MS || 5000,
+    timeout: 3000,
     headers: {
       "Content-Type": "application/json",
       "User-Agent": "ProjectSetu-Backend/1.0",
@@ -70,10 +71,21 @@ export class AiServiceClient {
     } catch (error: any) {
       const durationMs = Date.now() - startTime;
       logger.warn(
-        `[AI Client] AI Microservice unreachable (${error.code || error.message}) after ${durationMs}ms. Applying safe failover defaults.`
+        `[AI Client] AI Microservice unreachable (${error.code || error.message}) after ${durationMs}ms. Attempting Ollama local LLM triage...`
       );
 
-      // Return safe fallback defaults - Grievance MUST NEVER fail permanently or disappear
+      // Attempt local classification with Ollama (gemma3)
+      try {
+        const ollamaClassification = await this.classifyWithOllama(title, description, location, pincode);
+        if (ollamaClassification) {
+          logger.info(`[AI Client] Successfully classified grievance using local Ollama model (${ollamaClassification.category} -> ${ollamaClassification.department})`);
+          return ollamaClassification;
+        }
+      } catch (ollamaErr: any) {
+        logger.warn(`[AI Client] Ollama local triage fallback failed: ${ollamaErr.message}`);
+      }
+
+      // Return safe fallback defaults if both AI microservice and Ollama are unavailable
       return {
         category: "General Civic Query / Administration",
         department: "General Administration Department",
@@ -95,6 +107,80 @@ export class AiServiceClient {
           failover_applied_at: new Date().toISOString(),
         },
       };
+    }
+  }
+
+  /**
+   * Classify grievance using local Ollama instance (gemma3)
+   */
+  private static async classifyWithOllama(
+    title: string,
+    description: string,
+    location?: string,
+    pincode?: string
+  ): Promise<GrievanceAIAnalysisResult | null> {
+    try {
+      const prompt = `Classify this citizen complaint for Indian Government public services. Output ONLY a valid JSON object:
+Title: ${title.slice(0, 100)}
+Description: ${description.slice(0, 250)}
+Location: ${location || "Not provided"}
+Pincode: ${pincode || "Not provided"}
+
+JSON schema:
+{
+  "category": "Roads & Infrastructure" | "Water Supply & Sanitation" | "Electricity & Power" | "Solid Waste Management" | "Revenue & Land Administration" | "Public Health" | "General Public Grievance",
+  "department": "Public Works Department" | "Water Supply & Sewerage Board" | "Electricity Board" | "Municipal Corporation" | "Revenue Department" | "Health & Family Welfare" | "General Administration",
+  "department_code": "PWD" | "WATER" | "POWER" | "MUNICIPAL" | "REVENUE" | "HEALTH" | "GENERAL_ADMINISTRATION",
+  "priority": "LOW" | "MEDIUM" | "HIGH" | "URGENT",
+  "is_urgent": boolean,
+  "summary": "1-sentence summary",
+  "extracted_keywords": ["keyword1", "keyword2"]
+}`;
+
+      const res = await OllamaService.generate(prompt, "You are an AI civic triage officer. Output strictly valid JSON without explanation or formatting fences.", {
+        timeoutMs: 25000,
+        numPredict: 80,
+        temperature: 0.1,
+      });
+
+      if (!res.success || !res.response) {
+        return null;
+      }
+
+      const cleanJson = res.response
+        .replace(/```json/gi, "")
+        .replace(/```/g, "")
+        .trim();
+
+      const parsed = JSON.parse(cleanJson);
+      const validPriorities = ["LOW", "MEDIUM", "HIGH", "URGENT"];
+      const priority = validPriorities.includes(parsed.priority) ? parsed.priority : "MEDIUM";
+
+      return {
+        category: parsed.category || "General Public Grievance",
+        department: parsed.department || "General Administration Department",
+        department_code: parsed.department_code || "GENERAL_ADMINISTRATION",
+        suggested_department: parsed.department_code || "GENERAL_ADMINISTRATION",
+        issue_type: parsed.category || "Civic Grievance",
+        confidence_score: 0.9,
+        priority: priority as any,
+        estimated_sla_hours: priority === "URGENT" ? 24 : priority === "HIGH" ? 36 : 48,
+        extracted_keywords: Array.isArray(parsed.extracted_keywords) ? parsed.extracted_keywords : ["ollama-triaged"],
+        sentiment: "NEGATIVE",
+        is_urgent: Boolean(parsed.is_urgent || priority === "URGENT"),
+        summary: parsed.summary || title,
+        requires_human_review: false,
+        is_below_threshold: false,
+        model_version: `ollama-${res.model}`,
+        raw_inference: {
+          triageSource: "ollama-local-llm",
+          model: res.model,
+          durationMs: res.durationMs,
+        },
+      };
+    } catch (err: any) {
+      logger.warn(`[AI Client] Ollama grievance parsing skipped: ${err.message}`);
+      return null;
     }
   }
 

@@ -3,7 +3,7 @@ import { useLanguage, SUPPORTED_LANGUAGES, LanguageCode } from "../../context/La
 import { Languages, ChevronDown, Check } from "lucide-react";
 
 export const LanguageSelectorDropdown: React.FC<{ variant?: "header" | "pill" }> = ({ variant = "header" }) => {
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -34,7 +34,7 @@ export const LanguageSelectorDropdown: React.FC<{ variant?: "header" | "pill" }>
             ? "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition"
             : "flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium text-slate-800 shadow-sm transition"
         }
-        title="Change Language"
+        title={t("common.chooseLanguage") || "Change Language"}
       >
         <Languages className="w-3.5 h-3.5 text-blue-700" />
         <span className="font-bold">{activeLang.nativeName}</span>
@@ -44,7 +44,7 @@ export const LanguageSelectorDropdown: React.FC<{ variant?: "header" | "pill" }>
       {isOpen && (
         <div className="absolute right-0 mt-2 w-56 max-h-80 overflow-y-auto rounded-2xl bg-white shadow-xl border border-slate-200 z-50 p-1.5 animate-in fade-in zoom-in-95 duration-150">
           <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            Select Language
+            {t("common.chooseLanguage") || "Select Language"}
           </div>
           {SUPPORTED_LANGUAGES.map((lang) => {
             const isSelected = language === lang.code;
