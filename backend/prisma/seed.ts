@@ -382,7 +382,137 @@ async function main() {
     },
   });
 
-  // 4. Senior Officer / Department HOD
+  // 4. Roads & Highways (PWD) Field Officer
+  const officerPwd = await prisma.user.upsert({
+    where: { email: "officer.pwd@setu.gov.in" },
+    update: { passwordHash: defaultPasswordHash },
+    create: {
+      email: "officer.pwd@setu.gov.in",
+      phone: "+919876543215",
+      passwordHash: defaultPasswordHash,
+      fullName: "Er. Amit Saxena",
+      role: Role.OFFICER,
+      isActive: true,
+      isEmailVerified: true,
+      isPhoneVerified: true,
+      officerProfile: {
+        create: {
+          departmentId: departmentMap["ROADS_HIGHWAYS"],
+          badgeNumber: "PWD-OF-312",
+          designation: "Assistant Executive Engineer (Roads & Infrastructure)",
+          jurisdictionWard: "Ward 01 - Central",
+          locationId: locCentral.id,
+          isAvailable: true,
+        },
+      },
+    },
+  });
+
+  // 5. Health & Sanitation Field Officer
+  const officerHealth = await prisma.user.upsert({
+    where: { email: "officer.health@setu.gov.in" },
+    update: { passwordHash: defaultPasswordHash },
+    create: {
+      email: "officer.health@setu.gov.in",
+      phone: "+919876543216",
+      passwordHash: defaultPasswordHash,
+      fullName: "Dr. Suresh Chandra",
+      role: Role.OFFICER,
+      isActive: true,
+      isEmailVerified: true,
+      isPhoneVerified: true,
+      officerProfile: {
+        create: {
+          departmentId: departmentMap["HEALTH_SANITATION"],
+          badgeNumber: "HLT-OF-415",
+          designation: "Chief Sanitary Inspector / Medical Officer",
+          jurisdictionWard: "Ward 12 - Saket",
+          locationId: locSouth.id,
+          isAvailable: true,
+        },
+      },
+    },
+  });
+
+  // 6. Revenue & Land Field Officer
+  const officerRevenue = await prisma.user.upsert({
+    where: { email: "officer.revenue@setu.gov.in" },
+    update: { passwordHash: defaultPasswordHash },
+    create: {
+      email: "officer.revenue@setu.gov.in",
+      phone: "+919876543217",
+      passwordHash: defaultPasswordHash,
+      fullName: "Rameshwar Nath",
+      role: Role.OFFICER,
+      isActive: true,
+      isEmailVerified: true,
+      isPhoneVerified: true,
+      officerProfile: {
+        create: {
+          departmentId: departmentMap["REVENUE_LAND"],
+          badgeNumber: "REV-OF-520",
+          designation: "Naib Tehsildar (Revenue & Land Records)",
+          jurisdictionWard: "Ward 01 - Central",
+          locationId: locCentral.id,
+          isAvailable: true,
+        },
+      },
+    },
+  });
+
+  // 7. Women & Child Development Field Officer
+  const officerWcd = await prisma.user.upsert({
+    where: { email: "officer.wcd@setu.gov.in" },
+    update: { passwordHash: defaultPasswordHash },
+    create: {
+      email: "officer.wcd@setu.gov.in",
+      phone: "+919876543218",
+      passwordHash: defaultPasswordHash,
+      fullName: "Kavita Sen",
+      role: Role.OFFICER,
+      isActive: true,
+      isEmailVerified: true,
+      isPhoneVerified: true,
+      officerProfile: {
+        create: {
+          departmentId: departmentMap["WOMEN_CHILD"],
+          badgeNumber: "WCD-OF-625",
+          designation: "Child Development Project Officer (CDPO)",
+          jurisdictionWard: "Ward 12 - Saket",
+          locationId: locSouth.id,
+          isAvailable: true,
+        },
+      },
+    },
+  });
+
+  // 8. General Administration Field Officer
+  const officerAdmin = await prisma.user.upsert({
+    where: { email: "officer.admin@setu.gov.in" },
+    update: { passwordHash: defaultPasswordHash },
+    create: {
+      email: "officer.admin@setu.gov.in",
+      phone: "+919876543219",
+      passwordHash: defaultPasswordHash,
+      fullName: "Manoj Bajpai",
+      role: Role.OFFICER,
+      isActive: true,
+      isEmailVerified: true,
+      isPhoneVerified: true,
+      officerProfile: {
+        create: {
+          departmentId: departmentMap["GENERAL_ADMINISTRATION"],
+          badgeNumber: "ADM-OF-730",
+          designation: "Public Grievance Redressal Officer (PGRO)",
+          jurisdictionWard: "Ward 01 - Central",
+          locationId: locCentral.id,
+          isAvailable: true,
+        },
+      },
+    },
+  });
+
+  // 9. Senior Officer / Department HOD
   const seniorOfficer = await prisma.user.upsert({
     where: { email: "senior.officer@setu.gov.in" },
     update: { passwordHash: defaultPasswordHash },

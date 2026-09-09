@@ -274,7 +274,7 @@
     "adminPortal": "Department & Admin Portal"
   },
   "dashboard": {
-    "welcomeBack": "Namaste,",
+    "welcomeBack": "Welcome back,",
     "activeCitizenPortal": "Citizen Redressal Portal",
     "totalGrievances": "Total Grievances",
     "pendingGrievances": "Under Investigation",
@@ -282,8 +282,8 @@
     "resolvedGrievances": "Resolved & Closed",
     "activeApplications": "Active Applications",
     "quickActions": "Quick Action Hub",
-    "lodgeGrievanceBtn": "Lodge New Grievance",
-    "applyServiceBtn": "Apply Public Service",
+    "lodgeGrievanceBtn": "Lodge Public Grievance",
+    "applyServiceBtn": "Explore Government Services",
     "trackAppBtn": "Track Active Submissions",
     "recentGrievances": "Recent Grievances",
     "recentApplications": "Recent Service Applications",
@@ -543,7 +543,30 @@
     "refresh": "Refresh Feed",
     "noNotifications": "No new notifications",
     "noNotificationsDesc": "You will receive live SMS/in-app updates when case status changes.",
-    "viewDetails": "View Details"
+    "viewDetails": "View Details",
+    "types": {
+      "grievanceLodged": "Grievance Lodged",
+      "grievanceStatus": "Grievance Status",
+      "officerAssigned": "Field Officer Assigned",
+      "newGrievanceAssigned": "New Case Assigned",
+      "departmentAssigned": "Department Assigned",
+      "aiTriageComplete": "AI Triage Complete",
+      "applicationSubmitted": "Service Application Submitted",
+      "applicationStatus": "Application Status",
+      "slaApproaching": "SLA Approaching",
+      "slaBreached": "SLA Escalation"
+    },
+    "templates": {
+      "grievanceRegistered": "Your grievance '{{title}}' has been registered under reference {{ref}}. Routed to: {{dept}}, Priority: {{priority}}, Target SLA: {{sla}} hrs.",
+      "statusUpdated": "Your grievance {{ref}} has been updated to {{status}}. Remarks: {{remarks}}",
+      "statusUpdatedNoRemarks": "Your grievance {{ref}} has been updated to {{status}}.",
+      "officerAssigned": "Officer {{name}} ({{designation}}) has been assigned to your grievance and is actively investigating.",
+      "officerClaimed": "Field Officer {{name}} ({{designation}}) has claimed your grievance and initiated on-site technical inspection.",
+      "departmentAssigned": "Your complaint {{ref}} has been officially allocated to the {{dept}} for field investigation and resolution.",
+      "aiTriage": "Your grievance has been classified into '{{category}}' under the {{dept}} with {{priority}} priority (SLA: {{sla}}h turnaround).",
+      "applicationSubmitted": "Your application for {{service}} has been received under acknowledgement {{ref}}.",
+      "applicationUpdated": "Your application {{ref}} has been updated to {{status}}. Remarks: {{remarks}}"
+    }
   },
   "profile": {
     "title": "Citizen Profile & Preferences",
@@ -636,5 +659,17 @@
     "approved": "Approved",
     "rejected": "Rejected",
     "completed": "Completed"
+  },
+  "departments": {
+    "WATER_SUPPLY": "Department of Water Supply & Sewerage",
+    "ELECTRICITY": "Electricity & Power Distribution Department",
+    "ROADS_HIGHWAYS": "Public Works Department (PWD) - Roads & Infrastructure",
+    "HEALTH_SANITATION": "Department of Health, Medical & Family Welfare",
+    "REVENUE_LAND": "Department of Revenue & Land Administration",
+    "WOMEN_CHILD": "Department of Women & Child Development",
+    "GENERAL_ADMINISTRATION": "General Administration & Citizen Grievance Cell",
+    "pendingTriage": "Pending Human Review",
+    "aiTriaging": "AI Triaging",
+    "aiRouting": "AI Routing..."
   }
 }

@@ -26,6 +26,7 @@ import {
   Check,
   FileCheck,
 } from "lucide-react";
+import { getLocalizedDepartmentName } from "../../utils/localizationUtils";
 
 export const OfficerGrievanceDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -330,7 +331,7 @@ export const OfficerGrievanceDetailPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
                   <span className="text-[10px] text-slate-400 font-bold uppercase">{t("dashboard.assignedDepartment") || "Governing Department"}</span>
-                  <p className="font-bold text-slate-900">{grievance.department?.name || "General Administration"}</p>
+                  <p className="font-bold text-slate-900">{getLocalizedDepartmentName(grievance.department, t)}</p>
                 </div>
 
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">

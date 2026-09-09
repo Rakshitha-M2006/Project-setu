@@ -29,6 +29,7 @@ import {
   X,
   Compass,
 } from "lucide-react";
+import { getLocalizedDepartmentName } from "../../utils/localizationUtils";
 
 interface AttachmentFile {
   fileName: string;
@@ -360,7 +361,7 @@ export const NewGrievancePage: React.FC = () => {
 
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
                 <span className="text-slate-400 block text-[10px] uppercase font-bold">{t("dashboard.assignedDepartment")}</span>
-                <p className="font-bold text-slate-900">{submittedGrievance.departmentName}</p>
+                <p className="font-bold text-slate-900">{getLocalizedDepartmentName(submittedGrievance.departmentName, t)}</p>
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
@@ -428,7 +429,7 @@ export const NewGrievancePage: React.FC = () => {
   // --------------------------------------------------------------------------
   const departmentOptions = departments.map((d) => ({
     value: d.id,
-    label: d.name,
+    label: getLocalizedDepartmentName(d, t),
   }));
 
   const categoryOptions = categories.map((c: GrievanceCategory) => ({

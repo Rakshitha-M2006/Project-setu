@@ -100,6 +100,21 @@ export interface RegisterCitizenPayload {
   emergencyContact?: string | null;
 }
 
+export interface RegisterOfficerPayload {
+  fullName: string;
+  email: string;
+  phone: string;
+  password: string;
+  role: "OFFICER" | "SENIOR_OFFICER" | "ADMIN";
+  departmentId?: string | null;
+  designation: string;
+  badgeNumber?: string | null;
+  jurisdictionWard?: string | null;
+  city?: string | null;
+  state?: string | null;
+  pincode?: string | null;
+}
+
 export interface LoginPayload {
   identifier?: string;
   email?: string;

@@ -5,6 +5,7 @@ import { useLanguage } from "../../context/LanguageContext";
 import citizenApi, { NotificationItem } from "../../api/citizenApi";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
+import { localizeNotification } from "../../utils/localizationUtils";
 import {
   Bell,
   CheckCheck,
@@ -155,30 +156,33 @@ export const CitizenNotificationsPage: React.FC = () => {
             <p className="font-bold text-slate-700">{t("notifications.noNotifications") || "No notifications found"}</p>
           </div>
         ) : (
-          filteredNotifications.map((n) => (
-            <div
-              key={n.id}
-              onClick={() => handleNotificationClick(n)}
-              className={`p-4 rounded-2xl border transition cursor-pointer flex items-start gap-4 ${
-                !n.isRead
-                  ? "bg-blue-50/40 border-blue-200 shadow-sm"
-                  : "bg-white border-slate-200 hover:border-slate-300"
-              }`}
-            >
-              <div className="p-2.5 rounded-xl bg-blue-100 text-blue-700 shrink-0">
-                <Bell className="w-5 h-5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <h4 className="text-sm font-bold text-slate-900">{n.title}</h4>
-                  <span className="text-[10px] text-slate-400 shrink-0">
-                    {new Date(n.createdAt).toLocaleDateString()}
-                  </span>
+          filteredNotifications.map((n) => {
+            const loc = localizeNotification(n, t);
+            return (
+              <div
+                key={n.id}
+                onClick={() => handleNotificationClick(n)}
+                className={`p-4 rounded-2xl border transition cursor-pointer flex items-start gap-4 ${
+                  !n.isRead
+                    ? "bg-blue-50/40 border-blue-200 shadow-sm"
+                    : "bg-white border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <div className="p-2.5 rounded-xl bg-blue-100 text-blue-700 shrink-0">
+                  <Bell className="w-5 h-5" />
                 </div>
-                <p className="text-xs text-slate-600 mt-1 leading-relaxed">{n.message}</p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-sm font-bold text-slate-900">{loc.title}</h4>
+                    <span className="text-[10px] text-slate-400 shrink-0">
+                      {new Date(n.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">{loc.message}</p>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

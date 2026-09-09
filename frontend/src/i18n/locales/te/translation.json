@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "ప్రాజెక్ట్ సేతు",
+    "appName": "PROJECT SETU",
     "appTagline": "AI ఆధారిత ప్రభుత్వ సేవలు మరియు ప్రజా ఫిర్యాదుల పరిష్కార వేదిక",
     "govtOfIndia": "భారత ప్రభుత్వం | GOVERNMENT OF INDIA",
     "ministry": "ఎలక్ట్రానిక్స్ మరియు సమాచార సాంకేతిక మంత్రిత్వ శాఖ",
@@ -242,7 +242,7 @@
     "fullName": "పూర్తి పేరు *",
     "fullNamePlaceholder": "ఆధార్ ప్రకారం పూర్తి పేరు",
     "email": "ఇమెయిల్ చిరునామా *",
-    "emailPlaceholder": "citizen@domain.gov.in",
+    "emailPlaceholder": "city@domain.gov.in",
     "phone": "మొబైల్ సంఖ్య *",
     "phonePlaceholder": "9876543210",
     "confirmPassword": "పాస్‌వర్డ్‌ను నిర్ధారించండి *",
@@ -274,16 +274,16 @@
     "adminPortal": "విభాగ మరియు అడ్మిన్ పోర్టల్"
   },
   "dashboard": {
-    "welcomeBack": "స్వాగతం,",
-    "activeCitizenPortal": "జాతీయ పౌర సేవా మరియు ఫిర్యాదుల పోర్టల్",
+    "welcomeBack": "తిరిగి స్వాగతం,",
+    "activeCitizenPortal": "పౌర ఫిర్యాదుల పరిష్కార పోర్టల్",
     "totalGrievances": "మొత్తం ఫిర్యాదులు",
     "pendingGrievances": "పరిశీలనలో ఉన్నవి",
     "inProgressGrievances": "పురోగతిలో ఉన్నవి",
     "resolvedGrievances": "పరిష్కరించబడిన ఫిర్యాదులు",
     "activeApplications": "క్రియాశీల దరఖాస్తులు",
     "quickActions": "త్వరిత చర్యల కేంద్రం",
-    "lodgeGrievanceBtn": "కొత్త ఫిర్యాదు నమోదు చేయండి",
-    "applyServiceBtn": "ప్రజా సేవలకు దరఖాస్తు చేయండి",
+    "lodgeGrievanceBtn": "ప్రజా ఫిర్యాదును నమోదు చేయండి",
+    "applyServiceBtn": "ప్రభుత్వ సేవలను అన్వేషించండి",
     "trackAppBtn": "దరఖాస్తులను ట్రాక్ చేయండి",
     "recentGrievances": "ఇటీవలి ఫిర్యాదులు",
     "recentApplications": "ఇటీవలి సేవా దరఖాస్తులు",
@@ -488,7 +488,7 @@
     "caseFile": "ఫిర్యాదు కేస్ ఫైల్",
     "caseFileDesc": "పౌరుడు నమోదు చేసిన అధికారిక ఫిర్యాదు వివరాలు",
     "detailedDesc": "వివరణాత్మక ఫిర్యాదు వివరణ",
-    "profileTitle": "అధికారి సమాచారం మరియు అధికార పరిధి సెట్టింగ్‌లు",
+    "profileTitle": "అధికారిక ఫీల్డ్ ఆఫీసర్ రిజిస్ట్రీ",
     "profileSubtitle": "ప్రభుత్వ ఫీల్డ్ ఆఫీసర్ రిజిస్ట్రీ మరియు పరిధి సెట్టింగులు",
     "verifiedOfficer": "ధృవీకరించబడిన అధికారి",
     "availabilityStatus": "డ్యూటీ లభ్యత స్థితి",
@@ -543,7 +543,30 @@
     "refresh": "తాజా చేయండి",
     "noNotifications": "కొత్త నోటిఫికేషన్లు ఏవీ లేవు",
     "noNotificationsDesc": "కేసు స్థితి మారినప్పుడు మీకు లైవ్ అప్‌డేట్‌లు అందుతాయి.",
-    "viewDetails": "వివరాలు చూడండి"
+    "viewDetails": "వివరాలు చూడండి",
+    "types": {
+      "grievanceLodged": "ఫిర్యాదు నమోదు చేయబడింది",
+      "grievanceStatus": "ఫిర్యాదు స్థితి",
+      "officerAssigned": "ఫీల్డ్ ఆఫీసర్ కేటాయించబడ్డారు",
+      "newGrievanceAssigned": "కొత్త కేసు కేటాయించబడింది",
+      "departmentAssigned": "శాఖ కేటాయించబడింది",
+      "aiTriageComplete": "AI వర్గీకరణ పూర్తయింది",
+      "applicationSubmitted": "సేవా దరఖాస్తు సమర్పించబడింది",
+      "applicationStatus": "దరఖాస్తు స్థితి",
+      "slaApproaching": "SLA గడువు సమీపిస్తోంది",
+      "slaBreached": "SLA ఉల్లంఘన"
+    },
+    "templates": {
+      "grievanceRegistered": "మీ ఫిర్యాదు '{{title}}' రిఫరెన్స్ {{ref}} క్రింద నమోదైంది. శాఖ: {{dept}}, ప్రాధాన్యత: {{priority}}, గడువు: {{sla}} గంటలు.",
+      "statusUpdated": "మీ ఫిర్యాదు {{ref}} స్థితి {{status}}కి నవీకరించబడింది. వ్యాఖ్యలు: {{remarks}}",
+      "statusUpdatedNoRemarks": "మీ ఫిర్యాదు {{ref}} స్థితి {{status}}కి నవీకరించబడింది.",
+      "officerAssigned": "అధికారి {{name}} ({{designation}}) మీ ఫిర్యాదుకు కేటాయించబడ్డారు మరియు దర్యాప్తు చేస్తున్నారు.",
+      "officerClaimed": "ఫీల్డ్ అధికారి {{name}} ({{designation}}) మీ ఫిర్యాదును స్వీకరించి క్షేత్ర స్థాయి పరిశీలన ప్రారంభించారు.",
+      "departmentAssigned": "మీ ఫిర్యాదు {{ref}} అధికారికంగా పరిష్కారం కోసం {{dept}}కి కేటాయించబడింది.",
+      "aiTriage": "మీ ఫిర్యాదు {{dept}} క్రింద '{{category}}' వర్గంలో {{priority}} ప్రాధాన్యతతో వర్గీకరించబడింది (SLA: {{sla}} గంటలు).",
+      "applicationSubmitted": "{{service}} కోసం మీ దరఖాస్తు రిఫరెన్స్ {{ref}} క్రింద స్వీకరించబడింది.",
+      "applicationUpdated": "మీ దరఖాస్తు {{ref}} స్థితి {{status}}కి నవీకరించబడింది. వ్యాఖ్యలు: {{remarks}}"
+    }
   },
   "profile": {
     "title": "పౌరుడి ప్రొఫైల్ & ప్రాధాన్యతలు",
@@ -612,7 +635,7 @@
     "deptWcd": "మహిళా మరియు శిశు సంక్షేమ శాఖ (WCD)",
     "securityTitle": "భద్రత & నిబంధనలు",
     "securityDesc": "భారత ప్రభుత్వ వెబ్‌సైట్ల మార్గదర్శకాలు (GIGW) మరియు ISO 27001 డేటా రక్షణ ప్రమాణాలకు అనుగుణంగా ఉంది.",
-    "techStack": "Node.js • Prisma • PostgreSQL • FastAPI",
+    "techStack": "Node.js • ప్రిస్మా • PostgreSQL • FastAPI",
     "copyright": "© 2026 ప్రాజెక్ట్ సేతు. సర్వహక్కులు ప్రత్యేకించబడ్డాయి. ప్రభుత్వ సేవలు & ఫిర్యాదుల నిర్వహణ వేదిక.",
     "terms": "సేవా నిబంధనలు",
     "privacy": "గోప్యతా విధానం",
@@ -636,5 +659,17 @@
     "approved": "ఆమోదించబడింది",
     "rejected": "తిరస్కరించబడింది",
     "completed": "పూర్తయింది"
+  },
+  "departments": {
+    "WATER_SUPPLY": "నీటి సరఫరా మరియు మురుగునీటి పారుదల శాఖ",
+    "ELECTRICITY": "విద్యుత్ మరియు విద్యుత్ పంపిణీ శాఖ",
+    "ROADS_HIGHWAYS": "రోడ్లు మరియు భవనాల శాఖ (PWD)",
+    "HEALTH_SANITATION": "వైద్య, ఆరోగ్య మరియు కుటుంబ సంక్షేమ శాఖ",
+    "REVENUE_LAND": "రెవెన్యూ మరియు భూ పరిపాలన శాఖ",
+    "WOMEN_CHILD": "మహిళా మరియు శిశు సంక్షేమ శాఖ",
+    "GENERAL_ADMINISTRATION": "సాధారణ పరిపాలన మరియు ప్రజా ఫిర్యాదుల విభాగం",
+    "pendingTriage": "సమీక్ష పెండింగ్‌లో ఉంది",
+    "aiTriaging": "AI వర్గీకరణ కొనసాగుతోంది",
+    "aiRouting": "AI రూటింగ్..."
   }
 }

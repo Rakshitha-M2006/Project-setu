@@ -15,6 +15,7 @@ import {
   RefreshCw,
   ExternalLink,
 } from "lucide-react";
+import { getLocalizedDepartmentName } from "../../utils/localizationUtils";
 
 export const CitizenApplicationsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -157,7 +158,7 @@ export const CitizenApplicationsPage: React.FC = () => {
                     {app.service?.name}
                   </TableCell>
                   <TableCell className="text-slate-600 text-xs">
-                    {app.service?.department?.name || "General"}
+                    {getLocalizedDepartmentName(app.service?.department, t)}
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={app.status} type="application" size="sm" />

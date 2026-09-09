@@ -15,6 +15,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useDashboardPolling } from "../../hooks/useDashboardPolling";
+import { getLocalizedDepartmentName } from "../../utils/localizationUtils";
 
 export const SeniorOfficerDashboard: React.FC = () => {
   const toast = useToast();
@@ -181,7 +182,7 @@ export const SeniorOfficerDashboard: React.FC = () => {
                     {b.title}
                   </TableCell>
                   <TableCell className="text-xs text-slate-600">
-                    {b.department?.name || "General"}
+                    {getLocalizedDepartmentName(b.department, t)}
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={b.status} type="grievance" size="sm" />

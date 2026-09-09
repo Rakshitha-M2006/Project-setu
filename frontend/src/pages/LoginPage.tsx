@@ -39,6 +39,90 @@ interface RolePreset {
   };
 }
 
+export interface DepartmentOfficerPreset {
+  id: string;
+  departmentCode: string;
+  departmentName: string;
+  shortName: string;
+  officerName: string;
+  designation: string;
+  badgeNumber: string;
+  email: string;
+}
+
+export const DEPARTMENT_OFFICERS: DepartmentOfficerPreset[] = [
+  {
+    id: "water",
+    departmentCode: "WATER_SUPPLY",
+    departmentName: "Department of Water Supply & Sewerage",
+    shortName: "Water & Sanitation",
+    officerName: "Rajesh Verma",
+    designation: "Assistant Engineer - Field Operations",
+    badgeNumber: "WTR-OF-104",
+    email: "officer.water@setu.gov.in",
+  },
+  {
+    id: "electricity",
+    departmentCode: "ELECTRICITY",
+    departmentName: "Electricity & Power Distribution Department",
+    shortName: "Electricity & Power",
+    officerName: "Priya Singh",
+    designation: "Sub-Divisional Field Inspector",
+    badgeNumber: "ELC-OF-208",
+    email: "officer.electricity@setu.gov.in",
+  },
+  {
+    id: "pwd",
+    departmentCode: "ROADS_HIGHWAYS",
+    departmentName: "Public Works Department (PWD) - Roads",
+    shortName: "PWD (Roads)",
+    officerName: "Er. Amit Saxena",
+    designation: "Assistant Executive Engineer - Ward Roads",
+    badgeNumber: "PWD-OF-312",
+    email: "officer.pwd@setu.gov.in",
+  },
+  {
+    id: "health",
+    departmentCode: "HEALTH_SANITATION",
+    departmentName: "Department of Health, Medical & Sanitation",
+    shortName: "Health & Sanitation",
+    officerName: "Dr. Suresh Chandra",
+    designation: "Chief Sanitary & Health Inspector",
+    badgeNumber: "HLT-OF-415",
+    email: "officer.health@setu.gov.in",
+  },
+  {
+    id: "revenue",
+    departmentCode: "REVENUE_LAND",
+    departmentName: "Department of Revenue & Land Administration",
+    shortName: "Revenue & Land",
+    officerName: "Rameshwar Nath",
+    designation: "Tehsildar & Grievance Magistrate",
+    badgeNumber: "REV-OF-520",
+    email: "officer.revenue@setu.gov.in",
+  },
+  {
+    id: "wcd",
+    departmentCode: "WOMEN_CHILD",
+    departmentName: "Department of Women & Child Development",
+    shortName: "Women & Child",
+    officerName: "Kavita Sen",
+    designation: "District Women Welfare Protection Officer",
+    badgeNumber: "WCD-OF-625",
+    email: "officer.wcd@setu.gov.in",
+  },
+  {
+    id: "admin",
+    departmentCode: "GENERAL_ADMINISTRATION",
+    departmentName: "General Administration & Grievance Cell",
+    shortName: "General Admin",
+    officerName: "Manoj Bajpai",
+    designation: "Central Grievance Redressal Officer",
+    badgeNumber: "ADM-OF-730",
+    email: "officer.admin@setu.gov.in",
+  },
+];
+
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -47,6 +131,7 @@ export const LoginPage: React.FC = () => {
   const { t } = useLanguage();
 
   const [selectedRole, setSelectedRole] = useState<string>("CITIZEN");
+  const [selectedOfficerDeptId, setSelectedOfficerDeptId] = useState<string>("water");
   const [identifier, setIdentifier] = useState("citizen@setu.gov.in");
   const [password, setPassword] = useState("Password@123");
   const [isLoading, setIsLoading] = useState(false);
@@ -131,14 +216,33 @@ export const LoginPage: React.FC = () => {
 
   const handleSelectRolePreset = (preset: RolePreset, autoSubmit: boolean = false) => {
     setSelectedRole(preset.id);
-    setIdentifier(preset.email);
+    let targetEmail = preset.email;
+    if (preset.id === "OFFICER") {
+      const currentDeptOfficer = DEPARTMENT_OFFICERS.find((d) => d.id === selectedOfficerDeptId) || DEPARTMENT_OFFICERS[0];
+      targetEmail = currentDeptOfficer.email;
+    }
+    setIdentifier(targetEmail);
     setPassword(preset.password);
     setIdentifierError(null);
     setPasswordError(null);
     setErrorMsg(null);
 
     if (autoSubmit) {
-      executeLogin(preset.email, preset.password, preset.portalPath);
+      executeLogin(targetEmail, preset.password, preset.portalPath);
+    }
+  };
+
+  const handleSelectDepartmentOfficer = (dept: DepartmentOfficerPreset, autoSubmit: boolean = false) => {
+    setSelectedRole("OFFICER");
+    setSelectedOfficerDeptId(dept.id);
+    setIdentifier(dept.email);
+    setPassword("Password@123");
+    setIdentifierError(null);
+    setPasswordError(null);
+    setErrorMsg(null);
+
+    if (autoSubmit) {
+      executeLogin(dept.email, "Password@123", "/officer");
     }
   };
 
@@ -225,10 +329,14 @@ export const LoginPage: React.FC = () => {
     }
 
     const currentPreset = ROLE_PRESETS.find((p) => p.email.toLowerCase() === identifier.trim().toLowerCase());
-    await executeLogin(identifier, password, currentPreset?.portalPath);
+    const fallbackPath = selectedRole === "OFFICER" ? "/officer" : currentPreset?.portalPath;
+    await executeLogin(identifier, password, fallbackPath);
   };
 
   const activePreset = ROLE_PRESETS.find((p) => p.id === selectedRole) || ROLE_PRESETS[0];
+  const currentDeptOfficer = selectedRole === "OFFICER"
+    ? DEPARTMENT_OFFICERS.find((d) => d.id === selectedOfficerDeptId || d.email.toLowerCase() === identifier.trim().toLowerCase()) || DEPARTMENT_OFFICERS[0]
+    : null;
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center py-10 px-4 sm:px-6 lg:px-8">
@@ -318,17 +426,26 @@ export const LoginPage: React.FC = () => {
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
                 <CardTitle className="text-base font-bold text-slate-900">
                   {t("common.signIn")} • {t(activePreset.titleKey)}
+                  {currentDeptOfficer && ` (${currentDeptOfficer.shortName})`}
                 </CardTitle>
               </div>
               <CardDescription className="text-xs text-slate-500 mt-0.5">
-                {activePreset.defaultName} • {activePreset.email}
+                {currentDeptOfficer
+                  ? `${currentDeptOfficer.officerName} • ${currentDeptOfficer.email}`
+                  : `${activePreset.defaultName} • ${activePreset.email}`}
               </CardDescription>
             </div>
 
             <button
               type="button"
               disabled={isLoading}
-              onClick={() => handleSelectRolePreset(activePreset, true)}
+              onClick={() => {
+                if (selectedRole === "OFFICER" && currentDeptOfficer) {
+                  handleSelectDepartmentOfficer(currentDeptOfficer, true);
+                } else {
+                  handleSelectRolePreset(activePreset, true);
+                }
+              }}
               className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-xs shadow-xs transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
             >
               <Zap className="w-3.5 h-3.5 fill-current" />
@@ -341,6 +458,58 @@ export const LoginPage: React.FC = () => {
               <Alert variant="danger" onClose={() => setErrorMsg(null)}>
                 {errorMsg}
               </Alert>
+            )}
+
+            {/* Department Officer Quick Selector when Field Officer role is chosen */}
+            {selectedRole === "OFFICER" && (
+              <div className="bg-blue-50/70 border border-blue-200/80 rounded-2xl p-3.5 space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-blue-950 uppercase tracking-wider">
+                    <Briefcase className="w-4 h-4 text-blue-600" />
+                    <span>Select Department Field Officer:</span>
+                  </div>
+                  <span className="text-[11px] font-medium text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded-full self-start sm:self-auto">
+                    7 Government Departments
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  {DEPARTMENT_OFFICERS.map((dept) => {
+                    const isCurrent =
+                      selectedOfficerDeptId === dept.id ||
+                      identifier.trim().toLowerCase() === dept.email.toLowerCase();
+                    return (
+                      <button
+                        key={dept.id}
+                        type="button"
+                        onClick={() => handleSelectDepartmentOfficer(dept, false)}
+                        className={`px-2.5 py-1.5 text-xs font-semibold rounded-xl border text-left transition-all ${
+                          isCurrent
+                            ? "bg-blue-600 text-white border-blue-600 shadow-xs ring-2 ring-blue-500/20 font-bold"
+                            : "bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50"
+                        }`}
+                      >
+                        <div className="truncate">{dept.shortName}</div>
+                        <div className={`text-[10px] truncate ${isCurrent ? "text-blue-100" : "text-slate-400"}`}>
+                          {dept.officerName}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {currentDeptOfficer && (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-600 pt-1.5 border-t border-blue-100 gap-1">
+                    <div>
+                      <span className="font-semibold text-slate-900">{currentDeptOfficer.officerName}</span>
+                      <span className="text-slate-500"> • {currentDeptOfficer.designation}</span>
+                    </div>
+                    <div className="font-mono text-[10px] font-bold text-blue-800 bg-white px-2 py-0.5 rounded border border-blue-200 w-fit">
+                      Badge: {currentDeptOfficer.badgeNumber}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -393,10 +562,38 @@ export const LoginPage: React.FC = () => {
 
           <CardFooter className="pt-3 pb-5 flex flex-wrap items-center justify-between text-xs text-slate-600 border-t border-slate-100 bg-slate-50/50">
             <div>
-              {t("auth.noAccount")}{" "}
-              <Link to="/register" className="font-bold text-blue-700 hover:text-blue-800 hover:underline">
-                {t("auth.registerHere")}
-              </Link>
+              {selectedRole === "CITIZEN" && (
+                <span>
+                  {t("auth.noAccount") || "Don't have a citizen account?"}{" "}
+                  <Link to="/register?role=CITIZEN" className="font-bold text-emerald-700 hover:text-emerald-800 hover:underline">
+                    {t("auth.registerHere") || "Register here"}
+                  </Link>
+                </span>
+              )}
+              {selectedRole === "OFFICER" && (
+                <span>
+                  Don't have a field officer account?{" "}
+                  <Link to="/register?role=OFFICER" className="font-bold text-blue-700 hover:text-blue-800 hover:underline">
+                    Register as Field Officer
+                  </Link>
+                </span>
+              )}
+              {selectedRole === "SENIOR_OFFICER" && (
+                <span>
+                  Don't have a government officer account?{" "}
+                  <Link to="/register?role=SENIOR_OFFICER" className="font-bold text-indigo-700 hover:text-indigo-800 hover:underline">
+                    Register as Govt Officer (HOD)
+                  </Link>
+                </span>
+              )}
+              {selectedRole === "ADMIN" && (
+                <span>
+                  Don't have a super admin account?{" "}
+                  <Link to="/register?role=ADMIN" className="font-bold text-purple-700 hover:text-purple-800 hover:underline">
+                    Register as Super Admin
+                  </Link>
+                </span>
+              )}
             </div>
 
             <div className="text-[11px] text-slate-400 font-mono">

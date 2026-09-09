@@ -1,10 +1,11 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { userRepository } from "../repositories/userRepository";
+import { prisma } from "../config/database";
 import { env } from "../config/env";
 import { ApiError } from "../utils/apiError";
 import { JwtUserPayload } from "../types";
-import { RegisterCitizenInput, LoginInput } from "../validators/authValidator";
+import { RegisterCitizenInput, RegisterOfficerInput, LoginInput } from "../validators/authValidator";
 import { Role } from "@prisma/client";
 
 export class AuthService {
@@ -102,6 +103,66 @@ export class AuthService {
       role: newUser.role,
       fullName: newUser.fullName,
       departmentId: null,
+    });
+
+    return {
+      user: this.sanitizeUser(newUser),
+      token,
+    };
+  }
+
+  /**
+   * Registers a new Department Field Officer or Senior Government Officer
+   * Creates User + OfficerProfile with specific department and jurisdiction
+   */
+  async registerOfficer(input: RegisterOfficerInput) {
+    // 1. Check for duplicate email
+    const existingEmail = await userRepository.findByEmail(input.email);
+    if (existingEmail) {
+      throw ApiError.conflict("An account with this official email address already exists.");
+    }
+
+    // 2. Check for duplicate mobile number
+    const existingPhone = await userRepository.findByPhone(input.phone);
+    if (existingPhone) {
+      throw ApiError.conflict("An account with this mobile number already exists.");
+    }
+
+    // 3. Verify selected department exists (or auto-link General Admin if ADMIN without department)
+    let validatedDeptId = input.departmentId;
+    if (input.role === Role.ADMIN && !validatedDeptId) {
+      const genAdmin = await prisma.department.findUnique({
+        where: { code: "GENERAL_ADMINISTRATION" },
+      });
+      validatedDeptId = genAdmin?.id;
+    } else if (validatedDeptId) {
+      const department = await prisma.department.findUnique({
+        where: { id: validatedDeptId },
+      });
+      if (!department) {
+        throw ApiError.badRequest("Selected department is invalid or does not exist.");
+      }
+    } else {
+      throw ApiError.badRequest("Department selection is required for officers.");
+    }
+
+    // 4. Hash password securely
+    const passwordHash = await this.hashPassword(input.password);
+
+    // 5. Create user and officer profile
+    const newUser = await userRepository.createOfficer({
+      ...input,
+      departmentId: validatedDeptId,
+      passwordHash,
+    });
+
+    // 6. Generate authentication token with departmentId
+    const token = this.generateToken({
+      id: newUser.id,
+      email: newUser.email,
+      role: newUser.role,
+      fullName: newUser.fullName,
+      departmentId: newUser.officerProfile?.departmentId,
     });
 
     return {

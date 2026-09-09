@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Filter,
 } from "lucide-react";
+import { getLocalizedDepartmentName } from "../../utils/localizationUtils";
 
 export const OfficerDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -27,7 +28,7 @@ export const OfficerDashboard: React.FC = () => {
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-black tracking-tight">
-            {t("officer.officerQueue")} • {user?.officerProfile?.department?.name || "General Administration"}
+            {t("officer.officerQueue")} • {getLocalizedDepartmentName(user?.officerProfile?.department, t)}
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
             {t("officer.jurisdictionWard")} <strong>{user?.officerProfile?.jurisdictionWard || "Ward 12 - Central Zone"}</strong>.

@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "திட்டம் சேது",
+    "appName": "PROJECT SETU",
     "appTagline": "செயற்கை நுண்ணறிவு அரசு சேவைகள் மற்றும் குறைதீர்ப்பு தளம்",
     "govtOfIndia": "பாரத அரசு | இந்திய அரசு",
     "ministry": "மின்னணு மற்றும் தகவல் தொழில்நுட்ப அமைச்சகம்",
@@ -242,7 +242,7 @@
     "fullName": "முழு பெயர் *",
     "fullNamePlaceholder": "ஆதார் அட்டையில் உள்ளவாறு பெயர்",
     "email": "மின்னஞ்சல் முகவரி *",
-    "emailPlaceholder": "citizen@domain.gov.in",
+    "emailPlaceholder": "city@domain.gov.in",
     "phone": "மொபைல் எண் *",
     "phonePlaceholder": "9876543210",
     "confirmPassword": "கடவுச்சொல்லை உறுதிப்படுத்தவும் *",
@@ -274,16 +274,16 @@
     "adminPortal": "அரசு துறை & நிர்வாகி தளம்"
   },
   "dashboard": {
-    "welcomeBack": "வணக்கம்,",
-    "activeCitizenPortal": "தேசிய குடிமக்கள் சேவை மற்றும் குறைதீர்ப்பு போர்ட்டல்",
+    "welcomeBack": "மீண்டும் வருக,",
+    "activeCitizenPortal": "குடிமக்கள் குறைதீர்ப்பு போர்ட்டல்",
     "totalGrievances": "மொத்த புகார்கள்",
     "pendingGrievances": "விசாரணையில் உள்ளவை",
     "inProgressGrievances": "செயலில் உள்ளவை",
     "resolvedGrievances": "தீர்க்கப்பட்ட புகார்கள்",
     "activeApplications": "செயலில் உள்ள விண்ணப்பங்கள்",
     "quickActions": "விரைவு செயல் மையம்",
-    "lodgeGrievanceBtn": "புதிய குறை பதிவு செய்க",
-    "applyServiceBtn": "பொது சேவைக்கு விண்ணப்பிக்கவும்",
+    "lodgeGrievanceBtn": "பொதுக் குறையைப் பதிவு செய்யவும்",
+    "applyServiceBtn": "அரசு சேவைகளை ஆராயுங்கள்",
     "trackAppBtn": "விண்ணப்பங்களை கண்காணிக்கவும்",
     "recentGrievances": "சமீபத்திய புகார்கள்",
     "recentApplications": "சமீபத்திய சேவை விண்ணப்பங்கள்",
@@ -488,7 +488,7 @@
     "caseFile": "புகார் வழக்குக் கோப்பு",
     "caseFileDesc": "குடிமகனால் பதிவு செய்யப்பட்ட உத்தியோகபூர்வ புகார் விவரங்கள்",
     "detailedDesc": "விரிவான புகார் விளக்கம்",
-    "profileTitle": "அதிகாரி தகவல் மற்றும் அதிகார வரம்பு அமைப்புகள்",
+    "profileTitle": "அதிகாரப்பூர்வ கள அதிகாரி பதிவேடு",
     "profileSubtitle": "அரசு கள அதிகாரி பதிவேடு மற்றும் அதிகார வரம்பு அமைப்புகள்",
     "verifiedOfficer": "சரிபார்க்கப்பட்ட அதிகாரி",
     "availabilityStatus": "பணி கிடைக்கும் நிலை",
@@ -543,7 +543,30 @@
     "refresh": "புதுப்பி",
     "noNotifications": "அறிவிப்புகள் எதுவும் இல்லை",
     "noNotificationsDesc": "வழக்கின் நிலை மாறும்போது நேரடி SMS மற்றும் ஆப் அறிவிப்புகளைப் பெறுவீர்கள்.",
-    "viewDetails": "விவரங்களை காண்க"
+    "viewDetails": "விவரங்களை காண்க",
+    "types": {
+      "grievanceLodged": "குறை பதிவு செய்யப்பட்டது",
+      "grievanceStatus": "குறை நிலை",
+      "officerAssigned": "கள அதிகாரி நியமிக்கப்பட்டார்",
+      "newGrievanceAssigned": "புதிய வழக்கு ஒதுக்கப்பட்டது",
+      "departmentAssigned": "துறை ஒதுக்கப்பட்டது",
+      "aiTriageComplete": "AI வகைப்பாடு நிறைவடைந்தது",
+      "applicationSubmitted": "சேவை விண்ணப்பம் சமர்ப்பிக்கப்பட்டது",
+      "applicationStatus": "விண்ணப்ப நிலை",
+      "slaApproaching": "SLA காலக்கெடு நெருங்குகிறது",
+      "slaBreached": "SLA மீறல்"
+    },
+    "templates": {
+      "grievanceRegistered": "உங்கள் குறை '{{title}}' குறிப்பு எண் {{ref}} இன் கீழ் பதிவு செய்யப்பட்டுள்ளது. துறை: {{dept}}, முன்னுரிமை: {{priority}}, காலக்கெடு: {{sla}} மணிநேரம்.",
+      "statusUpdated": "உங்கள் குறை {{ref}} நிலை {{status}} என மாற்றப்பட்டுள்ளது. குறிப்புகள்: {{remarks}}",
+      "statusUpdatedNoRemarks": "உங்கள் குறை {{ref}} நிலை {{status}} என மாற்றப்பட்டுள்ளது.",
+      "officerAssigned": "அதிகாரி {{name}} ({{designation}}) உங்கள் குறைக்கு நியமிக்கப்பட்டு கள ஆய்வை மேற்கொண்டுள்ளார்.",
+      "officerClaimed": "கள அதிகாரி {{name}} ({{designation}}) உங்கள் குறையை ஏற்றுக்கொண்டு தள ஆய்வை தொடங்கியுள்ளார்.",
+      "departmentAssigned": "உங்கள் குறை {{ref}} அதிகாரப்பூர்வமாக கள விசாரணைக்காக {{dept}}க்கு ஒதுக்கப்பட்டுள்ளது.",
+      "aiTriage": "உங்கள் குறை {{dept}} கீழ் '{{category}}' பிரிவில் {{priority}} முன்னுரிமையுடன் (காலம்: {{sla}} மணி) வகைப்படுத்தப்பட்டுள்ளது.",
+      "applicationSubmitted": "{{service}} சேவைக்கான உங்கள் விண்ணப்பம் ஒப்புதல் எண் {{ref}} இன் கீழ் பெறப்பட்டது.",
+      "applicationUpdated": "உங்கள் விண்ணப்பம் {{ref}} நிலை {{status}} என மாற்றப்பட்டுள்ளது. குறிப்புகள்: {{remarks}}"
+    }
   },
   "profile": {
     "title": "குடிமகன் சுயவிவரம் மற்றும் விருப்பங்கள்",
@@ -636,5 +659,17 @@
     "approved": "அங்கீகரிக்கப்பட்டது",
     "rejected": "நிராகரிக்கப்பட்டது",
     "completed": "நிறைவடைந்தது"
+  },
+  "departments": {
+    "WATER_SUPPLY": "குடிநீர் வழங்கல் மற்றும் கழிவுநீர் வடிகால் துறை",
+    "ELECTRICITY": "மின்சாரம் மற்றும் மின் விநியோகத் துறை",
+    "ROADS_HIGHWAYS": "பொதுப்பணித்துறை (PWD) - சாலைகள் மற்றும் உள்கட்டமைப்பு",
+    "HEALTH_SANITATION": "சுகாதாரம், மருத்துவம் மற்றும் குடும்ப நலத்துறை",
+    "REVENUE_LAND": "வருவாய் மற்றும் நில நிர்வாகத் துறை",
+    "WOMEN_CHILD": "மகளிர் மற்றும் குழந்தைகள் மேம்பாட்டுத் துறை",
+    "GENERAL_ADMINISTRATION": "பொது நிர்வாகம் மற்றும் குடிமக்கள் குறைதீர்ப்பு பிரிவு",
+    "pendingTriage": "மதிப்பாய்வு நிலுவையில் உள்ளது",
+    "aiTriaging": "AI வகைப்படுத்துதல் நடக்கிறது",
+    "aiRouting": "AI வழியமைத்தல்..."
   }
 }

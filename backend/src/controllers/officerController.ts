@@ -75,7 +75,7 @@ export class OfficerController {
       const officer = await OfficerController.getOfficerContext(userId);
       const deptId = officer.departmentId;
 
-      // Base query for officer's assigned complaints
+      // Base query for officer's assigned complaints or departmental complaints
       const assignedCondition = {
         assignments: {
           some: {
@@ -85,23 +85,41 @@ export class OfficerController {
         },
       };
 
-      // 1. Total Assigned to this officer
+      const departmentalCondition = {
+        OR: [
+          assignedCondition,
+          { departmentId: deptId },
+        ],
+      };
+
+      // 1. Total complaints in officer's department / assigned queue
       const totalAssigned = await prisma.grievance.count({
-        where: assignedCondition,
+        where: departmentalCondition,
       });
 
-      // 2. Pending grievances (Assigned or Officer Pending)
+      // 2. Pending grievances (Assigned, Department Assigned, or Officer Pending)
       const pendingCount = await prisma.grievance.count({
         where: {
-          ...assignedCondition,
-          status: { in: [GrievanceStatus.ASSIGNED, GrievanceStatus.OFFICER_PENDING, GrievanceStatus.DEPARTMENT_ASSIGNED] },
+          ...departmentalCondition,
+          status: {
+            in: [
+              GrievanceStatus.ASSIGNED,
+              GrievanceStatus.OFFICER_PENDING,
+              GrievanceStatus.DEPARTMENT_ASSIGNED,
+              GrievanceStatus.SUBMITTED,
+              GrievanceStatus.AI_CLASSIFIED,
+              GrievanceStatus.AI_TRIAGED,
+              GrievanceStatus.NEEDS_REVIEW,
+              GrievanceStatus.AI_REVIEW_REQUIRED,
+            ],
+          },
         },
       });
 
       // 3. In Progress grievances
       const inProgressCount = await prisma.grievance.count({
         where: {
-          ...assignedCondition,
+          ...departmentalCondition,
           status: { in: [GrievanceStatus.IN_PROGRESS, GrievanceStatus.UNDER_INSPECTION] },
         },
       });
@@ -109,7 +127,7 @@ export class OfficerController {
       // 4. Resolved grievances
       const resolvedCount = await prisma.grievance.count({
         where: {
-          ...assignedCondition,
+          ...departmentalCondition,
           status: GrievanceStatus.RESOLVED,
         },
       });
@@ -117,7 +135,7 @@ export class OfficerController {
       // 5. High / Critical Priority
       const highPriorityCount = await prisma.grievance.count({
         where: {
-          ...assignedCondition,
+          ...departmentalCondition,
           priority: { in: [Priority.HIGH, Priority.CRITICAL] },
           status: { not: GrievanceStatus.RESOLVED },
         },
@@ -126,7 +144,7 @@ export class OfficerController {
       // 6. Overdue / SLA Breached
       const overdueCount = await prisma.grievance.count({
         where: {
-          ...assignedCondition,
+          ...departmentalCondition,
           slaDeadline: { lt: new Date() },
           status: { not: GrievanceStatus.RESOLVED },
         },
@@ -136,19 +154,19 @@ export class OfficerController {
       const departmentUnassignedCount = await prisma.grievance.count({
         where: {
           departmentId: deptId,
-          status: { in: [GrievanceStatus.DEPARTMENT_ASSIGNED, GrievanceStatus.OFFICER_PENDING] },
           assignments: { none: { isActive: true } },
+          status: { notIn: [GrievanceStatus.RESOLVED, GrievanceStatus.REJECTED] },
         },
       });
 
-      // 8. Recent 5 grievances for dashboard feed
+      // 8. Recent grievances for dashboard feed (both assigned and active department grievances)
       const recentGrievances = await prisma.grievance.findMany({
         where: {
           OR: [
             assignedCondition,
             {
               departmentId: deptId,
-              status: { in: [GrievanceStatus.DEPARTMENT_ASSIGNED, GrievanceStatus.OFFICER_PENDING] },
+              status: { notIn: [GrievanceStatus.RESOLVED, GrievanceStatus.REJECTED] },
             },
           ],
         },
@@ -215,7 +233,7 @@ export class OfficerController {
         };
       } else if (scope === "department_unassigned") {
         whereClause.departmentId = officer.departmentId;
-        whereClause.status = { in: [GrievanceStatus.DEPARTMENT_ASSIGNED, GrievanceStatus.OFFICER_PENDING] };
+        whereClause.status = { notIn: [GrievanceStatus.RESOLVED, GrievanceStatus.REJECTED] };
         whereClause.assignments = { none: { isActive: true } };
       } else {
         // Default: All departmental complaints
@@ -349,13 +367,14 @@ export class OfficerController {
         throw ApiError.notFound("Grievance not found in official registry");
       }
 
-      // Security check: Officer must belong to the department OR be assigned
+      // Security check: Officer must belong to the department OR be assigned OR be General Administration officer
       const isAssigned = grievance.assignments.some(
         (a) => a.officerProfile.userId === userId && a.isActive
       );
       const isSameDepartment = grievance.departmentId === officer.departmentId;
+      const isGeneralAdmin = officer.department?.code === "GENERAL_ADMINISTRATION";
 
-      if (!isAssigned && !isSameDepartment && req.user!.role !== "ADMIN") {
+      if (!isAssigned && !isSameDepartment && !isGeneralAdmin && req.user!.role !== "ADMIN") {
         throw ApiError.forbidden("You do not have departmental authorization to inspect this grievance");
       }
 
@@ -385,7 +404,8 @@ export class OfficerController {
       }
 
       // Department check
-      if (grievance.departmentId && grievance.departmentId !== officer.departmentId) {
+      const isGeneralAdmin = officer.department?.code === "GENERAL_ADMINISTRATION";
+      if (grievance.departmentId && grievance.departmentId !== officer.departmentId && !isGeneralAdmin) {
         throw ApiError.forbidden("Cannot accept grievance belonging to another department");
       }
 

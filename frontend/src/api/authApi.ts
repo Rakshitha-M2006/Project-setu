@@ -4,6 +4,7 @@ import {
   AuthResponseData,
   LoginPayload,
   RegisterCitizenPayload,
+  RegisterOfficerPayload,
   User,
 } from "../types";
 
@@ -14,6 +15,17 @@ export const authApi = {
   register: async (payload: RegisterCitizenPayload): Promise<ApiResponse<AuthResponseData>> => {
     const response = await axiosClient.post<ApiResponse<AuthResponseData>>(
       "/auth/register",
+      payload
+    );
+    return response.data;
+  },
+
+  /**
+   * Register a new field officer or government officer
+   */
+  registerOfficer: async (payload: RegisterOfficerPayload): Promise<ApiResponse<AuthResponseData>> => {
+    const response = await axiosClient.post<ApiResponse<AuthResponseData>>(
+      "/auth/register-officer",
       payload
     );
     return response.data;

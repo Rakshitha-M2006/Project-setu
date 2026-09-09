@@ -15,6 +15,7 @@ import {
   ChevronRight,
   ExternalLink,
 } from "lucide-react";
+import { getLocalizedDepartmentName } from "../../utils/localizationUtils";
 
 export const AdminGrievancesPage: React.FC = () => {
   const { t } = useLanguage();
@@ -181,7 +182,7 @@ export const AdminGrievancesPage: React.FC = () => {
 
                       <TableCell>
                         <div className="text-xs">
-                          <p className="font-semibold text-purple-900">{g.department?.name || "Unassigned"}</p>
+                          <p className="font-semibold text-purple-900">{getLocalizedDepartmentName(g.department, t)}</p>
                           <p className="text-[11px] text-slate-500">{g.category?.name || "General"}</p>
                         </div>
                       </TableCell>

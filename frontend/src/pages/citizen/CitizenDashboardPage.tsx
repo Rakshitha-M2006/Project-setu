@@ -24,6 +24,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useDashboardPolling } from "../../hooks/useDashboardPolling";
+import { getLocalizedDepartmentName, localizeNotification } from "../../utils/localizationUtils";
 
 export const CitizenDashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -341,7 +342,7 @@ export const CitizenDashboardPage: React.FC = () => {
                           {g.title}
                         </TableCell>
                         <TableCell className="text-xs text-slate-500">
-                          {g.department?.name || "Pending Triage"}
+                          {getLocalizedDepartmentName(g.department, t)}
                         </TableCell>
                         <TableCell>
                           <StatusBadge status={g.priority} type="priority" size="sm" />
@@ -390,25 +391,28 @@ export const CitizenDashboardPage: React.FC = () => {
                   <p className="text-[11px] text-slate-400">{t("notifications.noNotificationsDesc")}</p>
                 </div>
               ) : (
-                statsData.recentNotifications.map((n) => (
-                  <div
-                    key={n.id}
-                    className={`p-3 rounded-xl border transition ${
-                      n.isRead ? "bg-white border-slate-200" : "bg-blue-50/60 border-blue-200"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2 min-w-0">
-                      <p className="text-xs font-bold text-slate-900 leading-tight break-words">{n.title}</p>
-                      {!n.isRead && (
-                        <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0 mt-1" />
-                      )}
+                statsData.recentNotifications.map((n) => {
+                  const loc = localizeNotification(n, t);
+                  return (
+                    <div
+                      key={n.id}
+                      className={`p-3 rounded-xl border transition ${
+                        n.isRead ? "bg-white border-slate-200" : "bg-blue-50/60 border-blue-200"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 min-w-0">
+                        <p className="text-xs font-bold text-slate-900 leading-tight break-words">{loc.title}</p>
+                        {!n.isRead && (
+                          <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0 mt-1" />
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-600 mt-1 leading-relaxed break-words">{loc.message}</p>
+                      <span className="text-[10px] text-slate-400 mt-2 block font-mono">
+                        {new Date(n.createdAt).toLocaleDateString()} • {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
-                    <p className="text-xs text-slate-600 mt-1 leading-relaxed break-words">{n.message}</p>
-                    <span className="text-[10px] text-slate-400 mt-2 block font-mono">
-                      {new Date(n.createdAt).toLocaleDateString()} • {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                ))
+                  );
+                })
               )}
             </CardContent>
           </Card>
@@ -453,7 +457,7 @@ export const CitizenDashboardPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-200 text-slate-600">
               <div>
                 <span className="text-slate-400 block text-[10px]">{t("common.department")}:</span>
-                <span className="font-medium">{searchedGrievance.department?.name || "AI Triaging"}</span>
+                <span className="font-medium">{getLocalizedDepartmentName(searchedGrievance.department, t)}</span>
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px]">{t("common.priority")}:</span>
@@ -500,7 +504,7 @@ export const CitizenDashboardPage: React.FC = () => {
               <div>
                 <span className="text-slate-400 block text-[11px]">{t("dashboard.assignedDepartment")}</span>
                 <span className="font-bold text-slate-800">
-                  {selectedGrievance.department?.name || "General Administration"}
+                  {getLocalizedDepartmentName(selectedGrievance.department, t)}
                 </span>
               </div>
               <div>

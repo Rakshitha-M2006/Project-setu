@@ -15,6 +15,7 @@ import {
   RefreshCw,
   ExternalLink,
 } from "lucide-react";
+import { getLocalizedDepartmentName } from "../../utils/localizationUtils";
 
 export const CitizenGrievancesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -236,7 +237,7 @@ export const CitizenGrievancesPage: React.FC = () => {
                     {g.title}
                   </TableCell>
                   <TableCell className="text-slate-600 text-xs">
-                    {g.department?.name || "AI Routing..."}
+                    {getLocalizedDepartmentName(g.department, t)}
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={g.status} type="grievance" size="sm" />

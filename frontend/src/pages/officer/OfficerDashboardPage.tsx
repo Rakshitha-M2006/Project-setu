@@ -18,6 +18,7 @@ import {
   ExternalLink,
   ChevronRight,
 } from "lucide-react";
+import { getLocalizedDepartmentName } from "../../utils/localizationUtils";
 
 export const OfficerDashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -98,7 +99,7 @@ export const OfficerDashboardPage: React.FC = () => {
               {officer?.badgeNumber || "BADGE PENDING"}
             </span>
             <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold border border-amber-400/30">
-              {officer?.department || "Department of Public Grievances"}
+              {getLocalizedDepartmentName(officer?.department, t)}
             </span>
           </div>
 

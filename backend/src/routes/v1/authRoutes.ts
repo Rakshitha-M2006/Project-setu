@@ -5,6 +5,7 @@ import { requireAuth } from "../../middleware/authMiddleware";
 import { authRateLimiter } from "../../middleware/rateLimitMiddleware";
 import {
   registerCitizenSchema,
+  registerOfficerSchema,
   loginSchema,
 } from "../../validators/authValidator";
 
@@ -20,6 +21,18 @@ router.post(
   authRateLimiter,
   validateRequest(registerCitizenSchema),
   (req, res, next) => authController.register(req, res, next)
+);
+
+/**
+ * @route   POST /api/v1/auth/register-officer
+ * @desc    Register a new Department Field Officer or Senior Government Officer
+ * @access  Public (Rate-limited)
+ */
+router.post(
+  "/register-officer",
+  authRateLimiter,
+  validateRequest(registerOfficerSchema),
+  (req, res, next) => authController.registerOfficer(req, res, next)
 );
 
 /**

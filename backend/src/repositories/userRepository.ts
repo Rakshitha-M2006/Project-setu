@@ -1,6 +1,6 @@
 import { BaseRepository } from "./baseRepository";
 import { Role } from "@prisma/client";
-import { RegisterCitizenInput } from "../validators/authValidator";
+import { RegisterCitizenInput, RegisterOfficerInput } from "../validators/authValidator";
 
 export class UserRepository extends BaseRepository {
   /**
@@ -165,6 +165,136 @@ export class UserRepository extends BaseRepository {
       include: {
         citizenProfile: {
           include: {
+            location: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Register a new Department Field Officer or Senior Government Officer
+   * Supports both Role.OFFICER and Role.SENIOR_OFFICER with OfficerProfile
+   */
+  async createOfficer(
+    input: RegisterOfficerInput & { passwordHash: string }
+  ) {
+    let cleanPhone = input.phone.trim();
+    if (!cleanPhone.startsWith("+91") && cleanPhone.length === 10) {
+      cleanPhone = `+91${cleanPhone}`;
+    }
+
+    const userCity = (input.city || "District Headquarters").trim();
+    const userState = (input.state || "Delhi NCT").trim();
+    const pincode = (input.pincode || "110001").trim();
+
+    // Find or create matching Location
+    let locationId: string | null = null;
+    try {
+      const existingLoc = await this.db.location.findFirst({
+        where: {
+          state: userState,
+          district: userCity,
+          pincode,
+        },
+      });
+
+      if (existingLoc) {
+        locationId = existingLoc.id;
+      } else {
+        const newLoc = await this.db.location.create({
+          data: {
+            state: userState,
+            district: userCity,
+            locality: input.jurisdictionWard || `${userCity} Official Command`,
+            pincode,
+          },
+        });
+        locationId = newLoc.id;
+      }
+    } catch {
+      locationId = null;
+    }
+
+    if (input.role === Role.ADMIN) {
+      let deptId = input.departmentId;
+      if (!deptId) {
+        const genAdmin = await this.db.department.findUnique({
+          where: { code: "GENERAL_ADMINISTRATION" },
+        });
+        deptId = genAdmin?.id;
+      }
+
+      return this.db.user.create({
+        data: {
+          email: input.email.toLowerCase().trim(),
+          passwordHash: input.passwordHash,
+          fullName: input.fullName.trim(),
+          phone: cleanPhone,
+          role: Role.ADMIN,
+          isActive: true,
+          isEmailVerified: true,
+          isPhoneVerified: true,
+          officerProfile: deptId ? {
+            create: {
+              departmentId: deptId,
+              badgeNumber: input.badgeNumber?.trim() || `ADM-ROOT-${Math.floor(100 + Math.random() * 900)}`,
+              designation: input.designation?.trim() || "Super Administrator & Governance Controller",
+              jurisdictionWard: input.jurisdictionWard?.trim() || "National Platform Master Command",
+              locationId,
+              isAvailable: true,
+            },
+          } : undefined,
+        },
+        include: {
+          officerProfile: {
+            include: {
+              department: true,
+              location: true,
+            },
+          },
+        },
+      });
+    }
+
+    // Auto-generate badge number if not explicitly specified
+    let badge = input.badgeNumber?.trim();
+    if (!badge) {
+      const dept = await this.db.department.findUnique({
+        where: { id: input.departmentId! },
+      });
+      const prefix = dept?.code?.slice(0, 3) || "GOV";
+      const randomNum = Math.floor(100 + Math.random() * 900);
+      badge = input.role === Role.SENIOR_OFFICER
+        ? `HOD-${prefix}-${randomNum}`
+        : `${prefix}-OF-${randomNum}`;
+    }
+
+    return this.db.user.create({
+      data: {
+        email: input.email.toLowerCase().trim(),
+        passwordHash: input.passwordHash,
+        fullName: input.fullName.trim(),
+        phone: cleanPhone,
+        role: input.role,
+        isActive: true,
+        isEmailVerified: true,
+        isPhoneVerified: true,
+        officerProfile: {
+          create: {
+            departmentId: input.departmentId!,
+            badgeNumber: badge,
+            designation: (input.designation || "Field Redressal Officer").trim(),
+            jurisdictionWard: input.jurisdictionWard?.trim() || (input.role === Role.SENIOR_OFFICER ? "State / Departmental Command Headquarters" : "Ward Jurisdictional Area"),
+            locationId,
+            isAvailable: true,
+          },
+        },
+      },
+      include: {
+        officerProfile: {
+          include: {
+            department: true,
             location: true,
           },
         },

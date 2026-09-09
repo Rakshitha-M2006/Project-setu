@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { authService } from "../services/authService";
 import { auditService } from "../services/auditService";
 import { ApiResponse } from "../utils/apiResponse";
-import { RegisterCitizenInput, LoginInput } from "../validators/authValidator";
+import { RegisterCitizenInput, RegisterOfficerInput, LoginInput } from "../validators/authValidator";
 import { AuthenticatedRequest } from "../types";
 
 export class AuthController {
@@ -28,6 +28,39 @@ export class AuthController {
         res,
         result,
         "Citizen registered and authenticated successfully"
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/v1/auth/register-officer
+   * Register a new Department Field Officer or Senior Government Officer
+   */
+  async registerOfficer(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const input: RegisterOfficerInput = req.body;
+      const result = await authService.registerOfficer(input);
+
+      await auditService.logAction({
+        actorId: result.user.id,
+        action: "AUTH_REGISTER_OFFICER",
+        entityType: "User",
+        entityId: result.user.id,
+        req,
+        metadata: {
+          email: result.user.email,
+          role: result.user.role,
+          departmentId: (result.user as any).officerProfile?.departmentId,
+        },
+      });
+
+      const roleLabel = result.user.role === "SENIOR_OFFICER" ? "Senior Government Officer" : "Department Field Officer";
+      ApiResponse.created(
+        res,
+        result,
+        `${roleLabel} registered and authenticated successfully`
       );
     } catch (error) {
       next(error);

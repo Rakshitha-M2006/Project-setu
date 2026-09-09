@@ -181,21 +181,33 @@ export class GrievanceWorkflowService {
       };
     }
 
-    // D. Confidence < Threshold -> Human Review Required (AI_REVIEW_REQUIRED / NEEDS_REVIEW)
+    // D. Confidence < Threshold -> Supervisory Triage under General Administration
     logger.info(
-      `[Workflow] Low confidence (${(confidence * 100).toFixed(1)}% < ${(threshold * 100).toFixed(0)}%). Marking grievance for human review.`
+      `[Workflow] Low confidence (${(confidence * 100).toFixed(1)}% < ${(threshold * 100).toFixed(0)}%). Routing to General Administration for human triage.`
     );
+
+    let genAdminDeptId: string | null = null;
+    try {
+      const genDept = await prisma.department.findFirst({
+        where: { code: "GENERAL_ADMINISTRATION" },
+      });
+      if (genDept) {
+        genAdminDeptId = genDept.id;
+      }
+    } catch {
+      // Ignore database lookup error
+    }
 
     return {
       canAutoRoute: false,
-      departmentId: null,
+      departmentId: genAdminDeptId,
       departmentCode: "GENERAL_ADMINISTRATION",
-      departmentName: "Pending Human Review",
+      departmentName: "General Administration & Citizen Grievance Cell",
       categoryId: null,
       categoryName: null,
-      targetStatus: GrievanceStatus.AI_REVIEW_REQUIRED,
+      targetStatus: GrievanceStatus.OFFICER_PENDING,
       requiresHumanReview: true,
-      routingReason: `AI confidence (${(confidence * 100).toFixed(1)}%) is below ${(threshold * 100).toFixed(0)}% threshold. Grievance flagged for manual supervisor triage.`,
+      routingReason: `AI confidence (${(confidence * 100).toFixed(1)}%) is below ${(threshold * 100).toFixed(0)}% threshold. Routed to General Administration for officer triage.`,
     };
   }
 

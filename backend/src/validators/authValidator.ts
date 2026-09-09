@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Gender } from "@prisma/client";
+import { Gender, Role } from "@prisma/client";
 
 // Regex for valid 10-digit Indian Mobile Numbers (with optional +91 or 91 country code)
 const INDIAN_PHONE_REGEX = /^(?:\+91|91)?[6-9]\d{9}$/;
@@ -139,7 +139,77 @@ export const changePasswordSchema = z.object({
   }),
 });
 
+export const registerOfficerSchema = z.object({
+  body: z.object({
+    fullName: z
+      .string({ required_error: "Full name is required" })
+      .trim()
+      .min(2, "Full name must be at least 2 characters long")
+      .max(100, "Full name must not exceed 100 characters"),
+
+    email: z
+      .string({ required_error: "Official email address is required" })
+      .trim()
+      .toLowerCase()
+      .email("Please provide a valid email address format"),
+
+    phone: z
+      .string({ required_error: "Mobile number is required" })
+      .trim()
+      .regex(INDIAN_PHONE_REGEX, "Please provide a valid 10-digit Indian mobile number"),
+
+    password: z
+      .string({ required_error: "Password is required" })
+      .min(8, "Password must be at least 8 characters long")
+      .max(100, "Password must not exceed 100 characters")
+      .regex(PASSWORD_REGEX, "Password must contain at least 8 characters including letters and numbers"),
+
+    role: z
+      .enum([Role.OFFICER, Role.SENIOR_OFFICER, Role.ADMIN], {
+        invalid_type_error: "Role must be OFFICER, SENIOR_OFFICER, or ADMIN",
+      })
+      .default(Role.OFFICER),
+
+    departmentId: z
+      .string()
+      .trim()
+      .optional()
+      .nullable(),
+
+    designation: z
+      .string()
+      .trim()
+      .max(120)
+      .optional()
+      .nullable(),
+
+    badgeNumber: z
+      .string()
+      .trim()
+      .max(50)
+      .optional()
+      .nullable(),
+
+    jurisdictionWard: z
+      .string()
+      .trim()
+      .max(150)
+      .optional()
+      .nullable(),
+
+    city: z.string().trim().max(100).optional().nullable(),
+    state: z.string().trim().max(100).optional().nullable(),
+    pincode: z
+      .string()
+      .trim()
+      .regex(INDIAN_PINCODE_REGEX, "Pincode must be a valid 6-digit Indian PIN code")
+      .optional()
+      .nullable(),
+  }),
+});
+
 export type RegisterCitizenInput = z.infer<typeof registerCitizenSchema>["body"];
+export type RegisterOfficerInput = z.infer<typeof registerOfficerSchema>["body"];
 export type LoginInput = z.infer<typeof loginSchema>["body"];
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>["body"];
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>["body"];

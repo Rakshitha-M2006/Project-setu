@@ -231,7 +231,43 @@ export class GrievanceController {
           },
         });
 
-        // 8. Create Notification for Citizen
+        // 8. Auto-assign to active departmental field officer if available
+        if (created.departmentId) {
+          const activeOfficer = await tx.officerProfile.findFirst({
+            where: { departmentId: created.departmentId, isAvailable: true },
+            orderBy: { activeGrievanceCount: "asc" },
+          });
+
+          if (activeOfficer) {
+            await tx.grievanceAssignment.create({
+              data: {
+                grievanceId: created.id,
+                officerProfileId: activeOfficer.id,
+                assignedById: activeOfficer.userId,
+                assignmentNotes: "Automatically dispatched and assigned to departmental field officer.",
+                isActive: true,
+              },
+            });
+
+            await tx.officerProfile.update({
+              where: { id: activeOfficer.id },
+              data: { activeGrievanceCount: { increment: 1 } },
+            });
+
+            // Notify the assigned officer
+            await tx.notification.create({
+              data: {
+                recipientId: activeOfficer.userId,
+                type: NotificationType.OFFICER_ASSIGNED,
+                title: `New Grievance Assigned: ${trackingNumber}`,
+                message: `New ${priorityAndSla.priority} priority grievance '${title}' has been assigned to your queue.`,
+                linkUrl: `/officer/grievances/${created.id}`,
+              },
+            });
+          }
+        }
+
+        // 9. Create Notification for Citizen
         await tx.notification.create({
           data: {
             recipientId: citizenId,
@@ -261,7 +297,7 @@ export class GrievanceController {
         });
 
         return created;
-      });
+      }, { maxWait: 10000, timeout: 20000 });
 
       // 9. Return structured, sanitized payload for the citizen UI
       ApiResponse.created(

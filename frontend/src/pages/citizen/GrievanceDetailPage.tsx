@@ -21,6 +21,7 @@ import {
   Check,
   Flame,
 } from "lucide-react";
+import { getLocalizedDepartmentName } from "../../utils/localizationUtils";
 
 interface SlaData {
   totalHours: number;
@@ -385,7 +386,7 @@ export const GrievanceDetailPage: React.FC = () => {
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
                   <span className="text-slate-400 block text-[10px] uppercase font-bold">{t("dashboard.assignedDepartment") || "Assigned Department"}</span>
                   <p className="font-bold text-xs text-slate-900">
-                    {grievance.department?.name || "General Administration"}
+                    {getLocalizedDepartmentName(grievance.department, t)}
                   </p>
                 </div>
 

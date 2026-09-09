@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import citizenApi, { NotificationItem } from "../../api/citizenApi";
 import { useToast } from "../../context/ToastContext";
 import { useLanguage } from "../../context/LanguageContext";
+import { localizeNotification } from "../../utils/localizationUtils";
 import {
   Bell,
   CheckCheck,
@@ -161,38 +162,41 @@ export const NotificationDropdown: React.FC = () => {
                 <p className="text-[11px] text-slate-400">{t("notifications.noNotificationsDesc")}</p>
               </div>
             ) : (
-              notifications.map((n) => (
-                <div
-                  key={n.id}
-                  onClick={() => handleItemClick(n)}
-                  className={`p-3.5 flex items-start gap-3 transition cursor-pointer hover:bg-slate-50 ${
-                    !n.isRead ? "bg-blue-50/50" : "bg-white"
-                  }`}
-                >
+              notifications.map((n) => {
+                const loc = localizeNotification(n, t);
+                return (
                   <div
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                      !n.isRead ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-400"
+                    key={n.id}
+                    onClick={() => handleItemClick(n)}
+                    className={`p-3.5 flex items-start gap-3 transition cursor-pointer hover:bg-slate-50 ${
+                      !n.isRead ? "bg-blue-50/50" : "bg-white"
                     }`}
                   >
-                    {getNotificationIcon(n.type, n.isRead)}
-                  </div>
-
-                  <div className="min-w-0 flex-1 space-y-0.5">
-                    <div className="flex items-center justify-between gap-1">
-                      <p className="text-xs font-bold text-slate-900 truncate">{n.title}</p>
-                      {!n.isRead && (
-                        <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />
-                      )}
+                    <div
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                        !n.isRead ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-400"
+                      }`}
+                    >
+                      {getNotificationIcon(n.type, n.isRead)}
                     </div>
-                    <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed">
-                      {n.message}
-                    </p>
-                    <span className="text-[10px] text-slate-400 block pt-0.5">
-                      {new Date(n.createdAt).toLocaleDateString()}
-                    </span>
+
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="text-xs font-bold text-slate-900 truncate">{loc.title}</p>
+                        {!n.isRead && (
+                          <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed">
+                        {loc.message}
+                      </p>
+                      <span className="text-[10px] text-slate-400 block pt-0.5">
+                        {new Date(n.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
